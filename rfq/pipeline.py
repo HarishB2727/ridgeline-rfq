@@ -22,7 +22,7 @@ from pathlib import Path
 
 from . import classify as classify_mod
 from . import link as link_mod
-from .documents import Document, documentize
+from .documents import Document, documentize_all
 from .extract import extract_document, merge_revision
 from .ingest import ParsedEmail, ingest
 from .llm import CacheMiss, ModelRunner, ModelUnavailable
@@ -152,7 +152,7 @@ def process_email(path: Path, runner: ModelRunner, models: dict) -> Result:
         return result
 
     result.email = email
-    att_docs = [documentize(a) for a in email.attachments]
+    att_docs = [d for a in email.attachments for d in documentize_all(a)]
     result.documents = att_docs
 
     # ---- classify ---------------------------------------------------------- #

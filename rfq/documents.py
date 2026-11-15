@@ -326,12 +326,33 @@ def read_eml(data: bytes, source: str) -> Document:
     Rendered with its own envelope so the classifier can see *whose* message it is.
     A bounce carries our own outbound RFQ; those are not customer requests.
     """
+    import base64
+
     from .ingest import ingest_bytes
 
-    try:
-        inner = ingest_bytes(data, f"{source}:inner")
-    except Exception as exc:
-        return Document(source=source, kind="unreadable", error=f"attached message unreadable: {exc}")
+    def _parse(raw: bytes):
+        try:
+            return ingest_bytes(raw, f"{source}:inner")
+        except Exception:
+            return None
+
+    inner = _parse(data)
+    # RFC 2046 says message/rfc822 must be 7bit, so the stdlib will not record a
+    # base64 Content-Transfer-Encoding for one — but plenty of gateways base64 it
+    # regardless, and then the payload decodes to base64 text instead of a message.
+    # A message with neither From nor Subject is the tell.
+    if inner is None or not (inner.headers.get("from") or inner.subject):
+        try:
+            decoded = base64.b64decode(data, validate=False)
+        except Exception:
+            decoded = b""
+        if decoded:
+            again = _parse(decoded)
+            if again is not None and (again.headers.get("from") or again.subject):
+                inner = again
+
+    if inner is None:
+        return Document(source=source, kind="unreadable", error="attached message could not be parsed")
 
     head = [
         f"From: {inner.headers.get('from')}",
@@ -346,7 +367,13 @@ def read_eml(data: bytes, source: str) -> Document:
         inner_from=inner.sender_addr,
         inner_from_us=inner.from_us,
         inner_subject=inner.subject,
+        inner_attachment_names=[a.filename for a in inner.attachments],
     )
+    # The forwarded message carries its own attachments, and that is usually where
+    # the order is: a rep forwards "please price the attached" and the attachment
+    # hangs off the INNER message, not the one that reached us.  Reading only the
+    # inner body finds a covering note and no items.
+    d.meta["_inner_attachments"] = inner.attachments
     return d
 
 
@@ -447,6 +474,27 @@ def split_tall(png: bytes, target: int = STRIP_TARGET_PX) -> list[bytes]:
         buf = io.BytesIO()
         im.crop((0, top, w, bottom)).save(buf, format="PNG")
         out.append(buf.getvalue())
+    return out
+
+
+MAX_NESTING = 3
+
+
+def documentize_all(attachment, page_cap: int = DEFAULT_PAGE_CAP, _depth: int = 0) -> list[Document]:
+    """One attachment -> one or more Documents, following forwarded messages inward.
+
+    An attached email is a container, not a leaf.  Its own attachments become
+    documents in their own right, under their own filenames, so a line extracted
+    from a forwarded spreadsheet reports the spreadsheet as its source rather than
+    the envelope it travelled in.  Depth-limited: a chain of forwards is ordinary,
+    a thousand nested messages is a denial-of-service.
+    """
+    doc = documentize(attachment, page_cap)
+    inner = doc.meta.pop("_inner_attachments", None)
+    out = [doc]
+    if inner and _depth < MAX_NESTING:
+        for att in inner:
+            out.extend(documentize_all(att, page_cap, _depth + 1))
     return out
 
 

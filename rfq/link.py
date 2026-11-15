@@ -117,7 +117,12 @@ def apply_needs_review(result) -> None:
     # scoped to that document.  If another document in the same email did supply the
     # items, the reference resolved — the email as a whole is complete.  Only a reference
     # that nothing in the email could satisfy is a reason to stop a quote.
-    if result.unresolvable_reference and not carried_items:
+    #
+    # The same applies across emails: a revision that says "change line 1" points at a
+    # request this message does not contain, which is an unresolvable reference right up
+    # until we find that request in the inbox and merge against it.  Once `revises` is
+    # set, it is resolved.
+    if result.unresolvable_reference and not carried_items and not result.revises:
         reasons.append(result.unresolvable_reference)
 
     for err in result.errors:

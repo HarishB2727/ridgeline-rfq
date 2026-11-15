@@ -1,0 +1,34 @@
+{
+  "cost_usd": 0.00347,
+  "created": "2026-11-15T08:33:18Z",
+  "key": "dfb797ba8c27abf208e63ebe96939c2e6c79adfab179770cd9cd24014a835f92",
+  "model": "gpt-4.1",
+  "prompt_version": "v1",
+  "request": {
+    "parts": [
+      "=== EMAIL CONTEXT (for understanding only) ===\nFrom: Cody Landry <cody@landryoil.example>\nDate: Wed, 04 Nov 2026 15:00:00 -0600\nSubject: pricing request\nAttachments: (none)\n--- body of the current message ---\nNeed pricing:\n\n25 ea - 6\" 300# RF blind flange, A105\n\n=== THE DOCUMENT: body ===\n=== EMAIL BODY (current message) ===\nNeed pricing:\n\n25 ea - 6\" 300# RF blind flange, A105"
+    ],
+    "system": "You are an experienced inside sales rep at Ridgeline Industrial Supply, a distributor of pipe, fittings, flanges, valves, gaskets and bolting.  Its RFQ inbox is rfq@ridgeline-supply.example and its quotes are numbered Q-26-xxxxx.\n\nYou are reading ONE document from a customer's email and typing its line items into a quote.\n\nWHAT COUNTS AS A LINE\nOne line per thing the customer wants priced or bought. These are NOT lines:\n  - section headings and group titles\n  - column headers (ITEM / QTY / UOM / SIZE / DESCRIPTION)\n  - totals, subtotals, freight, tax, page headers and footers\n  - unit prices and extended amounts (on a PO they belong TO a line; they are not lines)\n  - addresses, signatures, phone numbers, reference numbers, confidentiality notices\n  - rows that are struck through, crossed out or lined out: the customer deleted them\n  - an older revision of a list when a newer one is present\n\nDESCRIPTION — the item, self-contained\nWrite it as you would type it into the quote without re-reading the email: the line's own\nwords PLUS every piece of context that applies to it, and nothing that does not.\n\nContext travels DOWN to a line from: the email subject, the sentence that introduces the\nlist, a section heading, a sheet or tab name, a form field (Material:, Rating:, Class:), a\ncolumn header, or an earlier line the line refers back to.\n\nContext has SCOPE. A heading applies to the lines beneath it until the next heading of the\nsame rank, and never to lines in another section. If one section says the pipe is SCH 40\nA53B and another says the fittings are 150# malleable iron, the pipe spec must not appear on\na fitting and the fitting spec must not appear on a pipe. Putting the wrong section's spec on\na line is the same mistake as missing the line.\n\nA line that states its own value OVERRIDES an inherited default. A sheet-wide note reading\n\"ALL FITTINGS <spec-A> UNLESS NOTED\" together with a row that says \"<spec-B>\" means that row\nis spec-B, and its description must NOT mention spec-A.\n\nResolve shorthand against the line above: ditto marks (,, \" -\"), \"same size\", \"same as\nabove\", \"do.\", a repeated blank column.\n\nNever invent a specification the document does not give. If a schedule, rating or material is\nsimply absent, leave it absent — a guessed spec is a wrong quote.\n\nQTY and UOM\nqty is the number the customer stated. Do not convert it and do not infer it.\nA size, schedule, pressure class, length, part number, line number or price is NEVER a quantity.\nA vague amount (\"a couple\", \"a few\", \"enough for the job\") is null — do not guess a number.\nA number spelled out in words is a number.\nuom is exactly one of EA FT M IN BX PK PR DZ RL LB SET GAL BAG CS, or null when the customer\nstated no unit. jts / joints / lengths / pieces / pcs / ea are EA. rolls is RL. sets is SET.\nboxes is BX. feet, ft and ' are FT. If a stated unit is not in that list, use null.\n\nRAW\n`raw` is the line as it appears in THIS document, verbatim: a table row's cells joined with\n\" | \", a handwritten line as you read it. It is what pairs your line with the rep's, so stay\nclose to the source and do not tidy it.\n\nCONTEXT_FROM\nFor each line, name where its inherited context came from, e.g. \"sheet name: ...\" or\n\"section heading: ...\" or \"email subject\". One short entry per source. This is read by a\nhuman checking your work.\n\nONLY THIS DOCUMENT\nYou are shown the email's subject and body as context. Use them to understand the document —\nand a quantity the body states about this document's contents counts. But every line you\nreturn must appear in THIS document. Never copy a line that lives in another attachment.\n\nA sentence that POINTS AT an item held somewhere else is not itself a line. \"Quote 3 of these,\nsame as the one in the picture\", \"price everything on the attached sheet\", \"the items below\nare per the BOM\" — in each case the item lives in that attachment or picture, which is read\nseparately, and its quantity is applied there. Returning the sentence as well would quote the\nsame item twice.\n\nIF IT IS NOT A LIST\nIf the document is real but has nothing to price, return document_role \"no_items\" and no lines.\n\nunresolvable_reference is only for items identified by something OUTSIDE THE WHOLE EMAIL —\n\"same as our last order\", \"per the drawing we discussed\", \"the usual\". A covering note whose\nitems live in an attachment is completely normal: that attachment is read separately and the\nitems are not lost. Do not report it."
+  },
+  "response": {
+    "document_role": "item_list",
+    "lines": [
+      {
+        "context_from": [
+          "email body"
+        ],
+        "description": "6\" 300# RF blind flange, A105",
+        "qty": 25,
+        "raw": "25 ea - 6\" 300# RF blind flange, A105",
+        "uom": "EA"
+      }
+    ],
+    "notes": "Single item in email body. All needed data is present in the line.",
+    "unresolvable_reference": null
+  },
+  "schema": "document_line_items",
+  "usage": {
+    "completion_tokens": 83,
+    "prompt_tokens": 1403
+  }
+}
