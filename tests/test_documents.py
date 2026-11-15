@@ -141,6 +141,41 @@ def main() -> int:
     check(x.meta["hidden_sheets_skipped"] == ["Rev A (old)"], "a hidden sheet is skipped")
     check("REV A" not in x.text.upper(), "and none of its rows reach the model")
 
+    # ---- the groundedness check ----------------------------------------------- #
+    # The dev inbox no longer provokes this: the prompt fix that stopped the model
+    # re-emitting the body's lines while reading an attachment means all 24 traces
+    # have an empty dropped_lines.  A guard with no live example is a guard nobody
+    # is watching, so it is exercised here instead.
+    from rfq.verify import grounded, is_not_a_product, tokens, vague_quantity, verify_lines
+
+    pdf_text = "ITEM | QTY | UOM | SIZE | DESCRIPTION\n1 | 7 | EA | 1/2\" | WELD NECK FLANGE, STD BORE"
+    hay = set(tokens(pdf_text))
+    check(grounded('1 | 7 | EA | 1/2" | WELD NECK FLANGE, STD BORE', hay)[0], "a real row is grounded")
+    check(
+        not grounded('2 sets of 4" 150# spiral wound gaskets, 304 SS/graphite', hay)[0],
+        "a line from the email body is NOT grounded in the attachment",
+        "the exact E006 case, which is how it was found",
+    )
+    check(not grounded("8 ea - 6\" 300# blind flange, A105", hay)[0], "an invented line is not grounded")
+
+    trace: list = []
+    kept = verify_lines(
+        [
+            {"raw": '1 | 7 | EA | 1/2" | WELD NECK FLANGE, STD BORE', "description": "a", "qty": 7, "uom": "EA"},
+            {"raw": '2 sets of 4" spiral wound gaskets', "description": "b", "qty": 2, "uom": "SET"},
+            {"raw": "TOTAL | 35", "description": "c", "qty": 35, "uom": "EA"},
+        ],
+        source="RFQ.pdf", haystack=pdf_text, trace=trace,
+    )
+    check(len(kept) == 1 and len(trace) == 2, "verify keeps the row and drops the stray and the total",
+          f"kept {len(kept)}, dropped {len(trace)}")
+    check(is_not_a_product("ITEM | QTY | UOM | SIZE | DESCRIPTION"), "a header row is not a product")
+    check(is_not_a_product("Subtotal | 6,030.10"), "a totals row is not a product")
+    check(not is_not_a_product('1 | 7 | EA | 1/2" | WELD NECK FLANGE'), "a real row is a product")
+    check(vague_quantity("a couple caps"), "'a couple' states no number")
+    check(not vague_quantity("twelve lengths of 1in pipe"), "a number spelled out is a number")
+    check(not vague_quantity("3 gal thread sealant"), "a digit always wins")
+
     # ---- the cache contract ----------------------------------------------------#
     # These exact shapes are what the committed answers were recorded against.
     expected = {
