@@ -179,13 +179,13 @@ def main() -> int:
     # ---- the cache contract ----------------------------------------------------#
     # These exact shapes are what the committed answers were recorded against.
     expected = {
-        "E005": ("text", 16, 1),
+        "E005": ("text", 17, 1),   # +1: the tab-name line read_xlsx now emits
         "E006": ("text", 57, 1),
         "E009": ("image", 0, 2),
         "E015": ("text", 19, 1),
         "E016": ("text", 7, 1),
         "E019": ("text", 17, 1),
-        "E021": ("text", 55, 1),
+        "E021": ("text", 57, 1),   # +2: two visible tabs, one such line each
         "E022": ("unreadable", 0, 0),
     }
     for eid, (kind, rows, n) in expected.items():
