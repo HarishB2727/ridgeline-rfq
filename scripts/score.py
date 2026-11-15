@@ -46,9 +46,22 @@ _SYNONYMS = [
 ]
 
 
-def canon(text: str) -> str:
+def _fold(text: str) -> str:
     s = " " + (text or "").lower() + " "
-    s = s.replace("”", '"').replace("“", '"').replace("″", '"').replace("’", "'")
+    return s.replace("”", '"').replace("“", '"').replace("″", '"').replace("’", "'")
+
+
+def plain(text: str) -> str:
+    """The README's rule on its own: case, spaces and punctuation ignored."""
+    return re.sub(r"[^a-z0-9]+", "", _fold(text))
+
+
+def canon(text: str) -> str:
+    """plain(), plus the spelling equivalences the README lists."""
+    s = _fold(text)
+    # multiword synonyms must survive a hyphen or slash joining their words
+    # ("butt-weld" and "butt weld" are the same spec)
+    s = re.sub(r"[-_/]+", " ", s)
     for pat, rep in _SYNONYMS:
         s = re.sub(pat, rep, s)
     return re.sub(r"[^a-z0-9]+", "", s)
@@ -90,8 +103,13 @@ def pair_lines(pred: list[dict], gold: list[dict], floor: float = 0.45):
     return pairs, unmatched_p, unmatched_g
 
 
-def mentions(desc_c: str, phrase: str) -> bool:
-    return any(canon(alt) in desc_c for alt in phrase.split("|") if alt.strip())
+def mentions(desc: str, phrase: str) -> bool:
+    """A phrase counts as mentioned under either normalisation: punctuation-stripped
+    (the README's own rule) or synonym-canonical (its list of equal spellings)."""
+    dc, dp = canon(desc), plain(desc)
+    return any(
+        canon(alt) in dc or plain(alt) in dp for alt in phrase.split("|") if alt.strip()
+    )
 
 
 def qty_ok(pred, gold, tol) -> bool:
@@ -162,7 +180,7 @@ def score(parsed: dict, key: dict, detail: str | None = None) -> dict:
             fields["uom"][0] += (pl.get("uom") or "EA") == (gl.get("uom") or "EA")
             fields["source"][1] += 1
             fields["source"][0] += (pl.get("source") or "") == (gl.get("source") or "")
-            desc_c = canon(pl.get("description", ""))
+            desc_c = pl.get("description", "")
             ok = all(mentions(desc_c, m) for m in gl.get("must_mention") or []) and not any(
                 mentions(desc_c, m) for m in gl.get("must_not_mention") or []
             )

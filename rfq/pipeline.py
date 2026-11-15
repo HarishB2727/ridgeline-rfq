@@ -28,9 +28,9 @@ from .ingest import ParsedEmail, ingest
 from .llm import CacheMiss, ModelRunner, ModelUnavailable
 from .verify import strip_internal, verify_lines
 
-DEFAULT_CLASSIFY_MODEL = os.getenv("RFQ_MODEL_CLASSIFY", "gpt-4o-mini")
-DEFAULT_EXTRACT_MODEL = os.getenv("RFQ_MODEL_EXTRACT", "gpt-4o")
-DEFAULT_VISION_MODEL = os.getenv("RFQ_MODEL_VISION", "gpt-4o")
+DEFAULT_CLASSIFY_MODEL = os.getenv("RFQ_MODEL_CLASSIFY", "gpt-4.1-mini")
+DEFAULT_EXTRACT_MODEL = os.getenv("RFQ_MODEL_EXTRACT", "gpt-4.1")
+DEFAULT_VISION_MODEL = os.getenv("RFQ_MODEL_VISION", "gpt-4.1")
 
 
 @dataclass
@@ -208,7 +208,10 @@ def process_email(path: Path, runner: ModelRunner, models: dict) -> Result:
         result.doc_roles[doc.source] = role
         result.unresolvable_reference = result.unresolvable_reference or res.get("unresolvable_reference")
         if role in ("decorative", "unreadable"):
-            if role == "unreadable":
+            # "unreadable" only means something when there were pixels to read.  A text
+            # body that is nothing but inline-image placeholders is not a failure — the
+            # images themselves are separate documents and get read on their own.
+            if role == "unreadable" and doc.kind == "image":
                 result.errors.append(f"{doc.source} was unreadable to the model: {res.get('notes', '')[:200]}")
             continue
 
@@ -216,7 +219,11 @@ def process_email(path: Path, runner: ModelRunner, models: dict) -> Result:
         if doc.kind == "text":
             result.haystacks[doc.source] = doc.text
         result.lines += verify_lines(
-            res.get("lines") or [], source=doc.source, haystack=haystack, trace=result.dropped
+            res.get("lines") or [],
+            source=doc.source,
+            haystack=haystack,
+            trace=result.dropped,
+            dedupe_by_item_no=bool(res.get("_strip_split")),
         )
 
     return result

@@ -97,15 +97,19 @@ def apply_needs_review(result) -> None:
         elif doc.truncated:
             reasons.append(f"{doc.source} was longer than the page limit and was only partly read")
 
-    if result.unresolvable_reference:
+    promised = result.email.signals["mentions_attachment"] or result.email.signals["mentions_picture"]
+    item_docs = [d for d in result.documents if d.source != "body" and d.kind != "unreadable"]
+    carried_items = [d for d in item_docs if result.doc_roles.get(d.source) == "item_list"]
+
+    # A note reported while reading ONE document ("the items are in the attachment") is
+    # scoped to that document.  If another document in the same email did supply the
+    # items, the reference resolved — the email as a whole is complete.  Only a reference
+    # that nothing in the email could satisfy is a reason to stop a quote.
+    if result.unresolvable_reference and not carried_items:
         reasons.append(result.unresolvable_reference)
 
     for err in result.errors:
         reasons.append(err)
-
-    promised = result.email.signals["mentions_attachment"] or result.email.signals["mentions_picture"]
-    item_docs = [d for d in result.documents if d.source != "body" and d.kind != "unreadable"]
-    carried_items = [d for d in item_docs if result.doc_roles.get(d.source) == "item_list"]
 
     if not result.lines:
         if promised and not carried_items:

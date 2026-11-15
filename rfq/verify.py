@@ -100,6 +100,30 @@ def normalise_uom(uom, raw: str) -> str | None:
     return None
 
 
+_VAGUE = re.compile(
+    r"\b(a\s+couple|couple\s+of|a\s+few|a\s+handful|a\s+bunch|several|some|enough|assorted|misc\w*|as\s+required|tbd)\b",
+    re.I,
+)
+_SPELLED = re.compile(
+    r"\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|"
+    r"fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|"
+    r"eighty|ninety|hundred|thousand|dozen)\b",
+    re.I,
+)
+
+
+def vague_quantity(raw: str) -> bool:
+    """Did the customer decline to say how many?
+
+    "A couple of caps" is not two — guessing turns an unanswerable line into a wrong
+    quote, and the key scores it as null.  A digit or a number spelled out in words
+    always wins; vagueness only applies when there is no number at all.
+    """
+    if re.search(r"\d", raw or "") or _SPELLED.search(raw or ""):
+        return False
+    return bool(_VAGUE.search(raw or ""))
+
+
 def normalise_qty(qty):
     if qty is None:
         return None, None
@@ -112,11 +136,48 @@ def normalise_qty(qty):
     return (int(q) if q.is_integer() else q), None
 
 
-def verify_lines(lines: list[dict], *, source: str, haystack: str | None, trace: list) -> list[dict]:
-    """Normalise, ground and de-duplicate one document's lines."""
+# An item number at the start of a table row: "7 | ...", "7. ...", "7) ...".
+# Deliberately excludes "7 - ..." because a handwritten list writes its QUANTITY
+# that way ("6 - 1\" x 3\" galv nipple"), and two lines may share a quantity.
+_ITEM_NO = re.compile(r"^\s*(\d{1,3})\s*[|.)]")
+
+
+def _leading_numbers_are_an_index(raws: list[str]) -> bool:
+    """Is the first column item numbers, or is it the quantity?
+
+    Not every table has an item-number column.  A pasted spreadsheet often leads with
+    the quantity instead, and two different rows can legitimately want 40 of something
+    — so treating a repeated leading number as a duplicate would delete a real line.
+    An index is a near-contiguous run; quantities are scattered.
+    """
+    nums = []
+    for r in raws:
+        m = _ITEM_NO.match(r or "")
+        if not m:
+            return False
+        nums.append(int(m.group(1)))
+    if len(nums) < 3:
+        return False
+    uniq = sorted(set(nums))
+    return uniq[-1] - uniq[0] <= len(uniq) + 2
+
+
+def verify_lines(
+    lines: list[dict], *, source: str, haystack: str | None, trace: list, dedupe_by_item_no: bool = False
+) -> list[dict]:
+    """Normalise, ground and de-duplicate one document's lines.
+
+    `dedupe_by_item_no` is for a page read as overlapping strips: the same numbered
+    row can come back twice, read slightly differently each time.  It is off by
+    default because a multi-sheet workbook legitimately restarts its numbering at 1
+    on every tab.
+    """
     hay = set(tokens(haystack)) if haystack is not None else None
     out: list[dict] = []
     seen: set[tuple] = set()
+    seen_item_no: set[str] = set()
+    if dedupe_by_item_no:
+        dedupe_by_item_no = _leading_numbers_are_an_index([(l or {}).get("raw", "") for l in lines or []])
 
     for ln in lines or []:
         raw = (ln.get("raw") or "").strip()
@@ -138,6 +199,9 @@ def verify_lines(lines: list[dict], *, source: str, haystack: str | None, trace:
                 continue
 
         qty, qty_note = normalise_qty(ln.get("qty"))
+        if qty is not None and vague_quantity(raw):
+            trace.append({"source": source, "raw": raw, "note": f"qty {qty} dropped: the line states no number"})
+            qty, qty_note = None, None
         uom = normalise_uom(ln.get("uom"), raw)
 
         key = (tuple(tokens(raw)), qty, source)
@@ -145,6 +209,16 @@ def verify_lines(lines: list[dict], *, source: str, haystack: str | None, trace:
             trace.append({"source": source, "raw": raw, "dropped": "duplicate of an earlier line"})
             continue
         seen.add(key)
+
+        if dedupe_by_item_no:
+            m = _ITEM_NO.match(raw)
+            if m:
+                if m.group(1) in seen_item_no:
+                    trace.append(
+                        {"source": source, "raw": raw, "dropped": f"item {m.group(1)} already read in another strip"}
+                    )
+                    continue
+                seen_item_no.add(m.group(1))
 
         item = {
             "raw": raw,

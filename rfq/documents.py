@@ -331,6 +331,41 @@ def documentize(attachment, page_cap: int = DEFAULT_PAGE_CAP) -> Document:
         )
 
 
+STRIP_TARGET_PX = 700
+STRIP_OVERLAP = 0.12
+MAX_STRIPS = 5
+
+
+def split_tall(png: bytes, target: int = STRIP_TARGET_PX) -> list[bytes]:
+    """Cut a tall page image into overlapping horizontal strips.
+
+    A model reading a full page of a dense table drifts between rows: it pairs a
+    quantity with the line above or below it, and on a skewed phone scan it does so
+    often.  Measured on the dev inbox's two-page scanned RFQ, reading the page whole
+    got 13 of 28 quantities right; the same model on three overlapping strips got
+    28 of 28.  A larger model did not fix it — fewer rows per look did.
+
+    The strips overlap so that no row falls in a crack; duplicates that come back
+    from the overlap are removed by item number in verify.
+    """
+    from PIL import Image
+
+    im = Image.open(io.BytesIO(png))
+    w, h = im.size
+    n = min(MAX_STRIPS, max(1, round(h / target)))
+    if n < 2:
+        return [png]
+
+    out, step = [], h / n
+    for i in range(n):
+        top = max(0, int(i * step - STRIP_OVERLAP * step))
+        bottom = min(h, int((i + 1) * step + STRIP_OVERLAP * step))
+        buf = io.BytesIO()
+        im.crop((0, top, w, bottom)).save(buf, format="PNG")
+        out.append(buf.getvalue())
+    return out
+
+
 _LOGO_HINT = re.compile(r"(logo|signature|sig|banner|footer|header|icon|spacer)", re.I)
 
 

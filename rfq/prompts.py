@@ -46,9 +46,16 @@ The cases that decide this job:
 * A message that accepts only part of a quote ("go ahead with 1, 2 and 4, hold the rest") is a
   purchase_order. Set selects_items_from_quoted and list exactly the labels it names.
 * A reply that adjusts a request already made in this thread is rfq_revision, not a new rfq.
+  But rfq_revision requires an EARLIER MESSAGE that this one changes — a reply, a quoted
+  thread beneath it, or an explicit reference to a request already sent. A first message that
+  attaches a list and then says "also please add two more" is simply an rfq: it is adding to
+  its own attachment, not revising anything we have already seen. A message that merely
+  re-sends a request unchanged is also not a revision.
 
 Set unresolvable_reference when the items are identified only by something that is not in this
 email — "same as our last order but double it", "per the drawing we discussed", "the usual".
+An attachment that IS present is not an unresolvable reference, even if you cannot see inside
+it from here.
 
 Asymmetry you must respect: when you are genuinely torn between a class that carries items
 (rfq / rfq_revision / purchase_order) and one that does not, choose the one that carries items.
@@ -121,9 +128,19 @@ You are shown the email's subject and body as context. Use them to understand th
 and a quantity the body states about this document's contents counts. But every line you
 return must appear in THIS document. Never copy a line that lives in another attachment.
 
+A sentence that POINTS AT an item held somewhere else is not itself a line. "Quote 3 of these,
+same as the one in the picture", "price everything on the attached sheet", "the items below
+are per the BOM" — in each case the item lives in that attachment or picture, which is read
+separately, and its quantity is applied there. Returning the sentence as well would quote the
+same item twice.
+
 IF IT IS NOT A LIST
 If the document is real but has nothing to price, return document_role "no_items" and no lines.
-If it refers to items it does not contain, put that in unresolvable_reference."""
+
+unresolvable_reference is only for items identified by something OUTSIDE THE WHOLE EMAIL —
+"same as our last order", "per the drawing we discussed", "the usual". A covering note whose
+items live in an attachment is completely normal: that attachment is read separately and the
+items are not lost. Do not report it."""
 
 
 EXTRACT_IMAGE_SYSTEM = f"""You are an experienced inside sales rep at {COMPANY}
@@ -137,7 +154,12 @@ FIRST decide what the picture is.
     items: return document_role "decorative" with no lines. Judge this by what the image
     SHOWS, never by how large the file is.
   - A nameplate, data tag or product label is the SPECIFICATION of the item being asked about.
-    Return one line for it; its quantity usually comes from the email body ("quote 3 of these").
+    Return ONE line for it. Its quantity usually comes from the email body ("quote 3 of these").
+    For `raw`, give ONE line from the plate and nothing else: the one that identifies the part,
+    normally the model or part number, copied exactly as printed — for example "MODEL: ABC-123".
+    Do not join the plate's fields together and do not list them in `raw`. Every other field
+    (size, class, ends, body, trim, material) belongs in `description`, which is where the
+    specification goes.
   - Otherwise read the list.
 
 {_LINE_RULES}
@@ -149,9 +171,21 @@ Read handwriting conservatively: if a digit is genuinely unreadable, leave qty n
 than guess. If the whole page is unreadable, return document_role "unreadable".
 For `raw`, give your reading of the line as written.
 
+READING A TABLE IN A PICTURE
+A photographed or scanned table is rarely square to the page: it is skewed, the paper curves,
+and a cell's text often sits slightly above or below its row's baseline. Work row by row, and
+anchor every row on its own item/line number in the leftmost column. For each item number,
+read ACROSS that one row — quantity, unit, size, description — and do not let your eye carry
+a value down or up from a neighbouring row. Before you answer, check that the item numbers you
+returned are the complete run that the table shows (1, 2, 3 ... with none missing or repeated)
+and that each row's values still belong together.
+
 ONLY THIS PICTURE
 You are shown the email's subject and body as context. Use them for context and for a quantity
-the body states — but return only lines that are in this picture."""
+the body states — but return only lines that are in this picture.
+
+unresolvable_reference is only for items identified by something OUTSIDE THE WHOLE EMAIL. A
+covering note whose list lives in this picture is normal; do not report it."""
 
 
 REVISE_SYSTEM = f"""You are an experienced inside sales rep at {COMPANY}

@@ -38,21 +38,48 @@ def _chunks(text: str) -> list[str]:
     return out
 
 
-def extract_document(email, doc, documents, runner, *, text_model: str, vision_model: str) -> dict:
-    """Return {document_role, lines[], notes, unresolvable_reference} for one document."""
-    ctx = ambient_context(email, documents)
+def _extract_images(email, doc, ctx, runner, vision_model: str) -> dict:
+    """One call per page; a tall page is shown as overlapping strips.
 
-    if doc.kind == "image":
-        parts = [
-            text_part(
-                ctx
-                + f"\n=== THE PICTURE: {doc.source} ===\n"
-                + (f"({len(doc.images)} pages follow)\n" if len(doc.images) > 1 else "")
+    Both choices exist for the same reason: the fewer rows a model looks at in one
+    go, the less it drifts across them.  Keeping pages in separate calls also bounds
+    the output length, so a twenty-page scan cannot truncate a single response.
+    """
+    from .documents import split_tall
+
+    merged = {"document_role": "no_items", "notes": "", "unresolvable_reference": None, "lines": []}
+    roles = []
+
+    for page_no, page in enumerate(doc.images, start=1):
+        strips = split_tall(page)
+        where = doc.source if len(doc.images) == 1 else f"{doc.source}, page {page_no} of {len(doc.images)}"
+        note = f"\n=== THE PICTURE: {where} ===\n"
+        if len(strips) > 1:
+            note += (
+                f"This one page is supplied as {len(strips)} overlapping horizontal strips, top to "
+                "bottom. They are parts of a single page, not separate documents, and the strips "
+                "overlap — so a row near a strip's edge may appear twice. Return every item exactly "
+                "once, and skip a row that is cut off at an edge if you cannot read it completely: "
+                "it is readable in full in the neighbouring strip.\n"
             )
-        ]
-        for img in doc.images:
-            parts.append(image_part(img, doc.media_type))
-        return runner.complete_json(
+        if merged["lines"]:
+            # A table continued onto a new page keeps the section that was open when
+            # the page broke — and that heading is back on the previous page, which
+            # this call cannot see.  Hand over the tail of what has been read already.
+            tail = merged["lines"][-4:]
+            note += (
+                "\nRows already read from earlier pages of this same document, oldest first:\n"
+                + "\n".join(f"  {l.get('raw', '')}   ->   {l.get('description', '')}" for l in tail)
+                + "\nIf this page continues that table, it continues its section too: carry the "
+                "same heading and defaults onto these rows unless this page states otherwise, "
+                "and do not repeat rows already listed above.\n"
+            )
+
+        parts = [text_part(ctx + note)]
+        for s in strips:
+            parts.append(image_part(s, "image/png" if len(strips) > 1 else doc.media_type))
+
+        res = runner.complete_json(
             email_id=email.id,
             model=vision_model,
             system=EXTRACT_IMAGE_SYSTEM,
@@ -61,6 +88,28 @@ def extract_document(email, doc, documents, runner, *, text_model: str, vision_m
             schema_name="document_line_items",
             max_tokens=8000,
         )
+        merged["lines"].extend(res.get("lines") or [])
+        roles.append(res.get("document_role", "no_items"))
+        merged["unresolvable_reference"] = merged["unresolvable_reference"] or res.get("unresolvable_reference")
+        if res.get("notes"):
+            merged["notes"] = (merged["notes"] + " " + res["notes"]).strip()
+
+    if "item_list" in roles:
+        merged["document_role"] = "item_list"
+    elif roles and all(r == "decorative" for r in roles):
+        merged["document_role"] = "decorative"
+    elif roles and all(r == "unreadable" for r in roles):
+        merged["document_role"] = "unreadable"
+    merged["_strip_split"] = True
+    return merged
+
+
+def extract_document(email, doc, documents, runner, *, text_model: str, vision_model: str) -> dict:
+    """Return {document_role, lines[], notes, unresolvable_reference} for one document."""
+    ctx = ambient_context(email, documents)
+
+    if doc.kind == "image":
+        return _extract_images(email, doc, ctx, runner, vision_model)
 
     text = doc.text[:MAX_DOC_CHARS]
     pieces = _chunks(text)

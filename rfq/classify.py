@@ -151,6 +151,18 @@ def reconcile(email, documents, result: dict) -> dict:
         out["classification"] = "auto_reply"
         out["carries_items"] = False
 
+    # You cannot revise a thread that is not there.  "Also please add ..." alongside a
+    # fresh attachment reads like a change but is just the rest of a first request, and
+    # mislabelling it costs the duplicate link too (a revision is never a duplicate).
+    if out["classification"] == "rfq_revision":
+        has_thread = bool(
+            email.headers.get("in_reply_to") or email.headers.get("references") or email.body_quoted
+        )
+        if not has_thread:
+            out["code_override"] = "no reply headers and no quoted history: cannot revise an earlier message"
+            out["classification"] = "rfq"
+            out["revises_earlier_request"] = False
+
     if out["classification"] not in ITEM_CLASSES:
         rows = _looks_like_an_item_table(documents)
         if rows >= 3 and not email.signals["bounce_envelope"]:

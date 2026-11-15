@@ -40,6 +40,19 @@ PRICING: dict[str, tuple[float, float]] = {
 }
 
 
+# We are run with someone else's key.  If it cannot reach the model we named, fall
+# through to the next comparable one rather than failing the email.  The cache entry
+# is always written under the model we ASKED for, so a later replay finds it whatever
+# the account could actually serve.
+FALLBACKS: dict[str, list[str]] = {
+    "gpt-4.1": ["gpt-4o", "gpt-4.1-mini", "gpt-4o-mini"],
+    "gpt-4o": ["gpt-4.1", "gpt-4o-mini", "gpt-4.1-mini"],
+    "gpt-4.1-mini": ["gpt-4o-mini", "gpt-4.1", "gpt-4o"],
+    "gpt-4o-mini": ["gpt-4.1-mini", "gpt-4o", "gpt-4.1"],
+}
+_MISSING_MODEL = ("model_not_found", "does not exist", "do not have access", "unsupported model")
+
+
 class CacheMiss(RuntimeError):
     """No recorded answer, and no key to go and get one."""
 
@@ -229,8 +242,14 @@ class ModelRunner:
                 content.append({"type": "text", "text": p["text"]})
             else:
                 b64 = base64.b64encode(p["data"]).decode()
+                # "high" forces the full-resolution tiling path.  On a dense scanned
+                # table the default downsamples enough that the model drifts between
+                # rows and pairs a quantity with the wrong line.
                 content.append(
-                    {"type": "image_url", "image_url": {"url": f"data:{p['media_type']};base64,{b64}"}}
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:{p['media_type']};base64,{b64}", "detail": "high"},
+                    }
                 )
 
         last: Exception | None = None
