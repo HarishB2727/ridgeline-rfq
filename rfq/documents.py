@@ -190,6 +190,48 @@ def _page_lines(page) -> str:
     return "\n".join(l for l in out if l.strip())
 
 
+MIN_EMBEDDED_PX = 200
+MIN_EMBEDDED_AREA_FRAC = 0.08
+
+
+def _substantial_images(doc, page) -> list[bytes]:
+    """Embedded rasters big enough to be a document rather than a logo or a rule.
+
+    Returned as their own images, not as a render of the whole page: the picture
+    occupies a region the text layer does not describe, so reading both cannot
+    double-count the same row.
+    """
+    from PIL import Image
+
+    out: list[bytes] = []
+    page_area = abs(page.rect.width * page.rect.height) or 1.0
+    for info in page.get_images(full=True):
+        xref = info[0]
+        try:
+            rects = page.get_image_rects(xref)
+        except Exception:
+            rects = []
+        shown = sum(abs(r.width * r.height) for r in rects)
+        if shown / page_area < MIN_EMBEDDED_AREA_FRAC:
+            continue
+        try:
+            ex = doc.extract_image(xref)
+        except Exception:
+            continue
+        if ex.get("width", 0) < MIN_EMBEDDED_PX or ex.get("height", 0) < MIN_EMBEDDED_PX:
+            continue
+        raw = ex.get("image") or b""
+        if not raw:
+            continue
+        try:  # normalise to PNG so one Document has one media type
+            buf = io.BytesIO()
+            Image.open(io.BytesIO(raw)).convert("RGB").save(buf, format="PNG")
+            out.append(buf.getvalue())
+        except Exception:
+            continue
+    return out
+
+
 def read_pdf(data: bytes, source: str, page_cap: int = DEFAULT_PAGE_CAP) -> Document:
     import pymupdf
 
@@ -209,28 +251,46 @@ def read_pdf(data: bytes, source: str, page_cap: int = DEFAULT_PAGE_CAP) -> Docu
     pages = min(n_pages, page_cap)
     truncated = n_pages > pages
 
-    texts = []
-    alnum = 0
-    for i in range(pages):
-        t = _page_lines(doc[i])
-        alnum += sum(ch.isalnum() for ch in t)
-        texts.append(t)
+    # Decide PER PAGE, not per file.  A PDF is routinely a mixture: a typed covering
+    # page in front of photographed ones, or a typed note with a screenshot of the BOM
+    # pasted into it.  Judging the whole file on its average text density reads the
+    # covering note and throws the actual order away.
+    texts: list[str] = []
+    images: list[bytes] = []
+    text_pages, scanned_pages, embedded = 0, 0, 0
 
-    if alnum / max(pages, 1) >= SCAN_TEXT_THRESHOLD:
-        body = "\n".join(f"--- page {i + 1} ---\n{t}" for i, t in enumerate(texts) if t.strip())
-        d = Document(source=source, kind="text", text=body, truncated=truncated)
-        d.meta.update(pages=n_pages, pages_read=pages, has_text_layer=True)
-        return d
-
-    # No usable text layer: it is a scan.  Rasterise and let a vision model read it.
-    images = []
     for i in range(pages):
         page = doc[i]
-        zoom = min(2.5, MAX_IMAGE_SIDE / max(page.rect.width, page.rect.height))
-        pix = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom))
-        images.append(pix.tobytes("png"))
-    d = Document(source=source, kind="image", images=images, media_type="image/png", truncated=truncated)
-    d.meta.update(pages=n_pages, pages_read=pages, has_text_layer=False, scanned=True)
+        t = _page_lines(page)
+        if sum(ch.isalnum() for ch in t) >= SCAN_TEXT_THRESHOLD:
+            texts.append(f"--- page {i + 1} ---\n{t}")
+            text_pages += 1
+            # a page can carry text AND a picture of a table; read the picture too
+            for img in _substantial_images(doc, page):
+                images.append(img)
+                embedded += 1
+        else:
+            zoom = min(2.5, MAX_IMAGE_SIDE / max(page.rect.width, page.rect.height))
+            images.append(page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom)).tobytes("png"))
+            scanned_pages += 1
+
+    body = "\n".join(texts)
+    kind = "text" if not images else ("image" if not body.strip() else "mixed")
+    d = Document(
+        source=source,
+        kind=kind,
+        text=body,
+        images=images,
+        media_type="image/png",
+        truncated=truncated,
+    )
+    d.meta.update(
+        pages=n_pages,
+        pages_read=pages,
+        text_pages=text_pages,
+        scanned_pages=scanned_pages,
+        embedded_images=embedded,
+    )
     return d
 
 

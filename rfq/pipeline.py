@@ -215,16 +215,34 @@ def process_email(path: Path, runner: ModelRunner, models: dict) -> Result:
                 result.errors.append(f"{doc.source} was unreadable to the model: {res.get('notes', '')[:200]}")
             continue
 
-        haystack = doc.text if doc.kind == "text" else None  # a picture has no text to check against
-        if doc.kind == "text":
+        lines = res.get("lines") or []
+        if doc.kind != "image":
             result.haystacks[doc.source] = doc.text
-        result.lines += verify_lines(
-            res.get("lines") or [],
-            source=doc.source,
-            haystack=haystack,
-            trace=result.dropped,
-            dedupe_by_item_no=bool(res.get("_strip_split")),
-        )
+
+        if res.get("_mixed"):
+            # One document, two halves: the text layer can be checked against itself,
+            # the pictures cannot.  Verify each against what it actually came from
+            # rather than letting one half borrow the other's evidence.
+            from_text = [l for l in lines if l.get("_from") == "text"]
+            from_image = [l for l in lines if l.get("_from") != "text"]
+            result.lines += verify_lines(
+                from_text, source=doc.source, haystack=doc.text, trace=result.dropped
+            )
+            result.lines += verify_lines(
+                from_image,
+                source=doc.source,
+                haystack=None,
+                trace=result.dropped,
+                dedupe_by_item_no=bool(res.get("_strip_split")),
+            )
+        else:
+            result.lines += verify_lines(
+                lines,
+                source=doc.source,
+                haystack=doc.text if doc.kind == "text" else None,
+                trace=result.dropped,
+                dedupe_by_item_no=bool(res.get("_strip_split")),
+            )
 
     return result
 

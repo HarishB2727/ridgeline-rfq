@@ -111,6 +111,30 @@ def extract_document(email, doc, documents, runner, *, text_model: str, vision_m
     if doc.kind == "image":
         return _extract_images(email, doc, ctx, runner, vision_model)
 
+    if doc.kind == "mixed":
+        # Both halves, merged.  They cover disjoint parts of the file — the text layer
+        # and the pictures it does not describe — so neither can repeat the other.
+        from_text = _extract_text(email, doc, ctx, runner, text_model)
+        from_images = _extract_images(email, doc, ctx, runner, vision_model)
+        for ln in from_text.get("lines") or []:
+            ln["_from"] = "text"
+        for ln in from_images.get("lines") or []:
+            ln["_from"] = "image"
+        roles = {from_text.get("document_role"), from_images.get("document_role")}
+        return {
+            "document_role": "item_list" if "item_list" in roles else "no_items",
+            "notes": " ".join(x for x in (from_text.get("notes"), from_images.get("notes")) if x),
+            "unresolvable_reference": from_text.get("unresolvable_reference")
+            or from_images.get("unresolvable_reference"),
+            "lines": (from_text.get("lines") or []) + (from_images.get("lines") or []),
+            "_strip_split": from_images.get("_strip_split", False),
+            "_mixed": True,
+        }
+
+    return _extract_text(email, doc, ctx, runner, text_model)
+
+
+def _extract_text(email, doc, ctx, runner, text_model: str) -> dict:
     text = doc.text[:MAX_DOC_CHARS]
     pieces = _chunks(text)
     merged = {"document_role": "no_items", "notes": "", "unresolvable_reference": None, "lines": []}
