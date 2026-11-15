@@ -23,9 +23,48 @@
   <button class="btn ghost" id="reset" hidden>Clear</button>
 </header>
 
-<!-- the pipeline, as the column headers of everything below -->
-<div id="pipebar" class="pipebar"></div>
+<!-- the architecture, once, at the top -->
+<section id="arch" class="arch">
+  <div class="arch-top">
+    <span class="arch-label">How one email is read</span>
+    <span class="legend"><i class="sw code"></i>code decides<i class="sw ai"></i>a model reads</span>
+    <div class="spacer"></div>
+    <button class="btn ghost tiny" id="arch-toggle">hide</button>
+  </div>
 
+  <div class="flow">
+    <div class="node io"><b>.eml</b><span>raw bytes</span></div>
+    <div class="arr"></div>
+
+    <div class="node code"><i>1</i><b>Open the envelope</b><span>split the current message from the thread below it</span></div>
+    <div class="arr"></div>
+
+    <div class="node code"><i>2</i><b>Read the attachments</b><span>Excel · Word · CSV · PDF · photos → text or pictures</span></div>
+    <div class="arr"></div>
+
+    <div class="node ai gate"><i>3</i><b>What kind of email?</b><span>one of seven — and a gate</span></div>
+    <div class="arr"></div>
+
+    <div class="node ai"><i>4</i><b>Read each document</b><span>one model call per document</span></div>
+    <div class="arr"></div>
+
+    <div class="node code"><i>5</i><b>Check every line</b><span>is it really in the document it claims?</span></div>
+    <div class="arr"></div>
+
+    <div class="node code"><i>6</i><b>Place it in the inbox</b><span>duplicate · revision · needs review</span></div>
+    <div class="arr"></div>
+
+    <div class="node io"><b>parsed.json</b><span>one row per email</span></div>
+  </div>
+
+  <div class="branchline">
+    <span class="bchip">the gate</span>
+    vendor quote · status inquiry · auto-reply · other → <b>stop here</b>, empty list, no step 4.
+    That is why those emails cost $0.0007 and a 44-line RFQ costs $0.0332.
+  </div>
+</section>
+
+<div id="pipebar" class="pipebar"></div>
 <div id="grid" class="grid"></div>
 
 <div id="dropzone" class="dropzone">

@@ -282,25 +282,70 @@ function panelEmail(e, host) {
 }
 
 function panelCode(e, host) {
-  const c = card("what code decided, before any model saw it");
-  const row = el("div", "row");
-  row.append(el("span", "chip code", `current message ${(e.body?.current || "").length} chars`));
-  row.append(el("span", (e.body?.quoted ? "chip warn" : "chip"),
-    `thread history ${(e.body?.quoted || "").length} chars — excluded`));
-  for (const k of Object.keys(e.signals || {})) {
-    if (k === "attachment_names") continue;
-    row.append(el("span", "chip", k.replace(/_/g, " ")));
+  const env = e.envelope || {}, sig = e.signals || {};
+  const cur = e.body?.current || "", quoted = e.body?.quoted || "";
+
+  /* the structured record — this IS what step 1 produces */
+  const c1 = card("the record code built from the raw bytes");
+  const dl = el("dl", "record");
+  const rows = [
+    ["id", e.id],
+    ["from", env.from],
+    ["to", env.to],
+    ["date", env.date],
+    ["subject", env.subject],
+    ["message-id", env.message_id],
+    ["in-reply-to", env.in_reply_to],
+    ["attachments", (sig.attachment_names || []).join(", ")],
+    ["body_current", `${cur.length} chars`],
+    ["body_quoted", `${quoted.length} chars` + (quoted ? "  (removed)" : "")],
+  ];
+  for (const [k, v] of rows) {
+    dl.append(el("dt", null, k));
+    dl.append(el("dd", v ? "" : "none", v || "—"));
   }
-  c.body.append(row);
-  c.body.append(el("div", "note",
-    "The split is pure code: the thread below a reply was handled when it arrived, so it is removed here and never reaches the model. Everything to the right of this column works on what is left."));
-  host.append(c);
-  if (e.body?.quoted) {
-    const q = card("what was cut away", [el("span", "chip warn", `${e.body.quoted.length} chars`)]);
-    const p = el("pre", "txt"); p.textContent = e.body.quoted;
-    q.body.append(p);
-    host.append(q);
+  c1.body.append(dl);
+  host.append(c1);
+
+  /* the actual text that goes forward */
+  const c2 = card("body_current — the text every later step works on",
+    [el("span", "chip code", `${cur.length} chars`)]);
+  const p1 = el("pre", "txt"); p1.textContent = cur || "(empty)";
+  c2.body.append(p1);
+  host.append(c2);
+
+  /* the actual text that was removed */
+  if (quoted) {
+    const c3 = card("body_quoted — cut here, never reaches a model",
+      [el("span", "chip warn", `${quoted.length} chars`)], true);
+    const p2 = el("pre", "txt"); p2.textContent = quoted;
+    c3.body.append(p2);
+    host.append(c3);
   }
+
+  /* header signals, with what each one actually is */
+  const MEANING = {
+    from_us: "sender is one of our own addresses — a rep forwarding a customer in",
+    bounce_envelope: "delivery-status headers: this is a bounce, whatever it contains",
+    auto_submitted: "Auto-Submitted header is set — machine generated",
+    list_unsubscribe: "bulk-mail headers or an unsubscribe link — marketing",
+    precedence_bulk: "Precedence: bulk",
+    mentions_attachment: "the body promises an attachment",
+    mentions_picture: "the body refers to a picture",
+    has_rfc822_attachment: "an entire email is attached to this one",
+  };
+  const found = Object.keys(sig).filter(k => k !== "attachment_names");
+  const c4 = card("header signals code found", [el("span", "chip", `${found.length}`)]);
+  if (!found.length) c4.body.append(el("div", "note", "None — nothing in the headers says anything unusual."));
+  for (const k of found) {
+    const f = el("div", "flag");
+    f.append(el("span", "fk", k));
+    f.append(el("span", "fv", MEANING[k] || String(sig[k])));
+    c4.body.append(f);
+  }
+  c4.body.append(el("div", "note",
+    "These are facts, not conclusions. They are handed to the classifier as evidence, and two of them — a bounce envelope, and nothing readable at all — can overrule whatever it answers."));
+  host.append(c4);
 }
 
 function panelDocs(e, host) {
@@ -522,3 +567,10 @@ addEventListener("drop", e => { e.preventDefault(); depth = 0; $("#veil").classL
 
 renderPipebar();
 $("#pipebar").classList.add("hidden");
+
+const archBtn = $("#arch-toggle");
+archBtn.onclick = () => {
+  const a = $("#arch");
+  a.classList.toggle("collapsed");
+  archBtn.textContent = a.classList.contains("collapsed") ? "show" : "hide";
+};
