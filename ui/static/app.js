@@ -105,22 +105,36 @@ function renderMeter(s) {
 
 /* ─────────────────────────────────────────────────────────────── grid */
 
-function cellBox(key, id, stateCls, kids, openable = true) {
+/* Every cell reads the same way: the value itself as a pill on top, one line of
+   plain English underneath, and a persistent "view" that opens the thing it is
+   talking about.  Consistency matters more here than density — the point of the
+   grid is that you can scan down a column without re-learning it each row. */
+
+function pill(text, kind = "", title = "") {
+  const p = el("span", `pill ${kind}`, text);
+  if (title) p.title = title;
+  return p;
+}
+
+function cellBox(key, id, stateCls, pills, sub, openable = true) {
   const c = el("div", `cell ${stateCls} ${openable ? "clickable" : ""}`);
-  for (const k of kids) if (k) c.append(k);
+  const top = el("div", "pills");
+  for (const x of [].concat(pills)) if (x) top.append(typeof x === "string" ? pill(x) : x);
+  c.append(top);
+  if (sub) c.append(el("div", "sub", sub));
   if (openable) {
     const v = el("span", "view");
     v.append("view", el("span", "arrow", "›"));
     c.append(v);
     c.onclick = () => openPanel(id, key);
     if (OPEN === id && PANEL === key) c.classList.add("on");
+  } else {
+    c.append(el("span", "view off", "—"));
   }
   return c;
 }
-/* a cell is dimmed until its stage has run, and faded when the stage was skipped.
-   State beyond that lives on the card's border, not on every cell. */
+
 const stepCls = v => v === "skipped" ? "skipped" : v === "done" ? "" : "pending";
-const val = (big, rest) => { const v = el("div", "v"); v.append(el("span", "big", big)); if (rest) v.append(rest); return v; };
 
 /* ───────────── grouping: a party, their requests, the thread under each ─────────── */
 
@@ -206,9 +220,9 @@ function renderGrid(s) {
 function groupHead(p, s) {
   const h = el("div", "ghead");
   const left = el("div", "gleft");
-  left.append(el("span", "gorg", p.org || p.domain));
-  left.append(el("span", "gdom", p.domain));
-  if (p.people.length) left.append(el("span", "gppl", p.people.join(", ")));
+  left.append(pill(p.org || p.domain, "org"));
+  left.append(pill(p.domain, "mono"));
+  for (const person of p.people.slice(0, 3)) left.append(pill(person, "person"));
   h.append(left);
 
   const nMsg = p.threads.reduce((a, t) => a + t.length, 0);
@@ -218,11 +232,11 @@ function groupHead(p, s) {
     return a + (((s.emails[last] || {}).summary || {}).n_items || 0);
   }, 0);
   const right = el("div", "gright");
-  right.append(el("span", "chip", `${p.threads.length} request${p.threads.length > 1 ? "s" : ""}`));
-  if (nMsg !== p.threads.length) right.append(el("span", "chip", `${nMsg} messages`));
-  if (lines) right.append(el("span", "chip ok", `${lines} lines to quote`));
+  right.append(pill(`${p.threads.length} request${p.threads.length > 1 ? "s" : ""}`, "ghost"));
+  if (nMsg !== p.threads.length) right.append(pill(`${nMsg} messages`, "ghost"));
+  if (lines) right.append(pill(`${lines} lines to quote`, "ok"));
   if (p.threads.some(t => t.some(i => (((s.emails[i] || {}).summary) || {}).needs_review)))
-    right.append(el("span", "chip warn", "needs review"));
+    right.append(pill("needs review", "warn"));
   h.append(right);
   return h;
 }
@@ -235,82 +249,88 @@ function emailRow(s, id, rel, members) {
   const busy = e.state === "running" || e.state === "linking";
   const rowState = busy ? "running" : sum.needs_review ? "review" : e.error ? "failed" : "";
   const row = el("div", `erow ${rel ? "child" : ""} ${OPEN === id ? "open" : ""} ${rowState}`);
+  const addr = (q.sender || "").replace(/.*</, "").replace(/>/, "");
+  const date = q.date ? new Date(q.date).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
 
-  /* 1 — who / which message */
+  /* 1 — which message */
   const who = el("div", "cell who");
-  if (rel) who.append(el("span", "tee", "↳"));
-  const wm = el("div", "lead-main");
-  if (rel) {
-    wm.append(el("div", "person", q.subject));
-    const sub = el("div", "org");
-    sub.append(el("span", rel.cls, rel.label));
-    wm.append(sub);
-  } else {
-    wm.append(el("div", "person", q.subject));
-    wm.append(el("div", "org", q.person || ""));
-  }
-  wm.append(el("div", "eid", id + (q.date ? " · " + new Date(q.date).toLocaleDateString(undefined,
-    { month: "short", day: "numeric" }) : "")));
-  who.append(wm);
+  const top = el("div", "pills");
+  top.append(pill(q.subject, "subject", q.subject));
+  if (rel) top.append(pill(rel.label, rel.cls === "chip ok" ? "ok" : ""));
+  if (q.from_us) top.append(pill("our rep", "warn"));
+  who.append(top);
+  who.append(el("div", "sub", `${id}${date ? " · " + date : ""}${rel ? "" : "  ·  " + (q.person || "")}`));
   if (busy) who.append(el("span", "dotpulse"));
-  if (q.from_us) who.append(el("span", "chip", "our rep"));
   row.append(who);
 
-  row.append(cellBox("email", id, "", [
-    val(`${q.body_chars ?? 0}`, el("span", "muted", "chars")),
-    el("div", "sub", (q.sender || "").replace(/.*</, "").replace(/>/, "")),
-  ]));
+  /* 2 — the email, as is */
+  row.append(cellBox("email", id, "",
+    pill(addr || "—", "mono", q.sender),
+    `${q.body_chars ?? 0} chars · ${q.bytes ? (q.bytes / 1024).toFixed(1) + " KB on disk" : ""}`));
 
-  row.append(cellBox("code", id, stepCls(st.ingest), [
-    val(`${q.body_chars ?? 0}`, el("span", "muted", "current")),
-    q.quoted_chars ? el("div", "sub warnish", `+${q.quoted_chars} thread — excluded`)
-      : el("div", "sub", "no thread below"),
-  ]));
+  /* 3 — what code made of it */
+  row.append(cellBox("code", id, stepCls(st.ingest),
+    [pill(`${q.body_chars ?? 0} chars kept`, "code"),
+     q.quoted_chars ? pill(`${q.quoted_chars} cut`, "warn") : null],
+    q.quoted_chars ? "thread history excluded from the model" : "no thread below — nothing to cut"));
 
+  /* 4 — attachments, by name and what each became */
   const docs = sum.documents || [];
   const att = docs.filter(d => d.source !== "body");
-  const kinds = {};
-  for (const d of att) kinds[d.kind] = (kinds[d.kind] || 0) + 1;
-  const nAtt = att.length || (q.attachments || []).length;
-  const bad = att.some(d => d.kind === "unreadable");
-  row.append(cellBox("docs", id, stepCls(st.documents), [
-    val(`${nAtt}`, el("span", "muted", nAtt === 1 ? "file" : "files")),
-    el("div", "sub", att.length ? Object.entries(kinds).map(([k, v]) => `${v} ${k}`).join(", ")
-      : (q.attachments || []).join(", ") || "none"),
-    bad ? el("span", "chip warn", "unreadable") : null,
-  ], nAtt > 0));
+  const names = att.length ? att : (q.attachments || []).map(n => ({ source: n, kind: null }));
+  const kindOf = { text: "read as text", image: "read as pictures", mixed: "text + pictures",
+                   unreadable: "could not be opened" };
+  const counts = {};
+  for (const d of att) counts[d.kind] = (counts[d.kind] || 0) + 1;
+  const extracted = att.length
+    ? Object.entries(counts).map(([k, v]) => `${v} ${kindOf[k] || k}`).join(", ")
+    : (q.attachments || []).length ? "not read yet" : "nothing attached — the body is the whole request";
+  row.append(cellBox("docs", id, stepCls(st.documents),
+    names.length
+      ? names.slice(0, 3).map(d => pill(d.source,
+          d.kind === "unreadable" ? "warn" : "mono", d.source))
+        .concat(names.length > 3 ? [pill(`+${names.length - 3}`, "")] : [])
+      : pill("no attachments", "ghost"),
+    extracted, names.length > 0));
 
+  /* 5 — classification */
   const cc = (e.calls || []).filter(c => (c.label || "").startsWith("Decide"));
   const isItem = ["rfq", "rfq_revision", "purchase_order"].includes(sum.classification);
-  row.append(cellBox("classify", id, stepCls(st.classify), [
-    sum.classification ? el("span", `chip ${isItem ? "ok" : ""}`, sum.classification) : el("div", "v muted", "—"),
-    el("div", "sub", cc.length ? `${cc.length} model call${cc.length > 1 ? "s" : ""}` : "not run"),
-  ], cc.length > 0));
+  row.append(cellBox("classify", id, stepCls(st.classify),
+    pill(sum.classification || "not run", sum.classification ? (isItem ? "ok" : "ghost") : "ghost"),
+    cc.length ? `${cc.length} model call${cc.length > 1 ? "s" : ""} · ${isItem ? "carries items" : "carries no items"}`
+      : "waiting", cc.length > 0));
 
+  /* 6 — model reads the documents */
   const xc = (e.calls || []).length - cc.length;
   const skipped = st.extract === "skipped";
-  row.append(cellBox("extract", id, stepCls(st.extract), [
-    skipped ? el("span", "chip", "skipped") : val(`${xc}`, el("span", "muted", xc === 1 ? "call" : "calls")),
-    el("div", "sub", skipped ? "no items to read — the gate" : `${sum.n_items ?? 0} lines returned`),
-  ], xc > 0));
+  row.append(cellBox("extract", id, stepCls(st.extract),
+    pill(skipped ? "skipped" : `${xc} model call${xc === 1 ? "" : "s"}`, skipped ? "ghost" : "ai"),
+    skipped ? "the gate — nothing to read" : `${sum.n_items ?? 0} lines returned`, xc > 0));
 
-  row.append(cellBox("verify", id, stepCls(st.verify), [
-    val(`${sum.n_items ?? 0}`, el("span", "muted", "kept")),
-    el("div", "sub", sum.n_dropped ? `${sum.n_dropped} dropped` : "nothing dropped"),
-  ], e.state === "done"));
+  /* 7 — the line check */
+  row.append(cellBox("verify", id, stepCls(st.verify),
+    [pill(`${sum.n_items ?? 0} kept`, sum.n_items ? "ok" : "ghost"),
+     sum.n_dropped ? pill(`${sum.n_dropped} dropped`, "warn") : null],
+    skipped ? "nothing to check — this email carries no items"
+      : sum.n_dropped ? "a line was not found in the document it claimed"
+      : sum.n_items ? "every line found in the document it came from"
+      : "nothing survived — see the outcome",
+    e.state === "done"));
 
-  const isCurrent = members && !sum.duplicate_of &&
-    id === [...members].reverse().find(m => !(((s.emails[m] || {}).summary) || {}).duplicate_of
-      && (((s.emails[m] || {}).summary) || {}).n_items);
-  row.append(cellBox("outcome", id, stepCls(st.link), [
-    sum.needs_review ? el("span", "chip warn", "needs review")
-      : sum.duplicate_of ? el("span", "chip", "duplicate")
-      : st.link === "done" ? el("span", "chip ok", isCurrent && members.length > 1 ? "current order" : "ready to quote")
-      : el("div", "v muted", "—"),
-    el("div", "sub", sum.duplicate_of ? `superseded by ${sum.duplicate_of}`
-      : sum.needs_review ? (sum.review_reason || "").slice(0, 48)
-      : `${sum.n_items ?? 0} lines`),
-  ], e.state === "done"));
+  /* 8 — outcome */
+  const live = members ? members.filter(m => !(((s.emails[m] || {}).summary) || {}).duplicate_of
+    && (((s.emails[m] || {}).summary) || {}).n_items) : [];
+  const isCurrent = live.length > 1 && id === live[live.length - 1];
+  const outPill = sum.needs_review ? pill("needs review", "warn")
+    : sum.duplicate_of ? pill("duplicate", "ghost")
+    : st.link === "done" ? pill(isCurrent ? "current order" : "ready to quote", "ok")
+    : pill("waiting", "ghost");
+  row.append(cellBox("outcome", id, stepCls(st.link), outPill,
+    sum.duplicate_of ? `superseded by ${sum.duplicate_of}`
+      : sum.needs_review ? (sum.review_reason || "").slice(0, 52)
+      : sum.revises ? `the complete order, ${sum.n_items ?? 0} lines`
+      : `${sum.n_items ?? 0} lines`, e.state === "done"));
 
   if (OPEN === id) {
     const d = el("div", "detail");
