@@ -164,6 +164,9 @@ class ModelRunner:
         self.max_retries = max_retries
         self.write_cache = write_cache
         self.ledger = Ledger()
+        # Optional observer, set by the local viewer so it can show what was asked
+        # and what came back.  Unset it changes nothing: no call, no cost, no output.
+        self.observer = None
         self.api_key = api_key or os.getenv("OPENAI_API_KEY") or None
         self._client = None
         self._client_lock = threading.Lock()
@@ -249,6 +252,8 @@ class ModelRunner:
                     cost=0.0,
                     cached=True,
                 )
+                self._notify(email_id, model, schema_name, system, parts, hit["response"],
+                             hit.get("usage", {}), 0.0, True)
                 return hit["response"]
 
         if self.offline:
@@ -333,4 +338,33 @@ class ModelRunner:
                 "response": answer,
             },
         )
+        self._notify(email_id, model, schema_name, system, parts, answer, usage, cost, False)
         return answer
+
+    def _notify(self, email_id, model, schema_name, system, parts, response, usage, cost, cached):
+        if self.observer is None:
+            return
+        try:
+            self.observer({
+                "email_id": email_id,
+                "model": model,
+                "schema": schema_name,
+                "cached": cached,
+                "system": system,
+                "user": [
+                    p["text"] if p["type"] == "text"
+                    else f"<image {len(p['data']) // 1024} KB {p['media_type']}>"
+                    for p in parts
+                ],
+                "images": [
+                    base64.b64encode(p["data"]).decode()
+                    for p in parts if p["type"] == "image"
+                ][:6],
+                "response": response,
+                "usage": usage,
+                "cost_usd": round(cost, 6) if cost else price(model, usage.get("prompt_tokens", 0),
+                                                              usage.get("completion_tokens", 0)),
+                "at": time.time(),
+            })
+        except Exception:
+            pass  # an observer must never break a run

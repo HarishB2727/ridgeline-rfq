@@ -1,13 +1,12 @@
-"""A local viewer: drop .eml files, watch them go through the pipeline, inspect each one.
+"""A local viewer for the RFQ pipeline: drop .eml files, press Process, watch it work.
 
-Stdlib only, no build step, no new dependencies — `pip install -e .` stays the one
-setup step. It imports rfq as a library and never writes to parsed.json, cache/ or
-anything else the graded submission depends on.
+Stdlib only, no build step, no new dependencies.  Imports rfq as a library and
+writes nothing the graded submission depends on.
 
-    rfq-ui            # or: python ui/server.py
+    rfq-ui                 # or: python ui/server.py
     → http://127.0.0.1:8765
 
-Binds to loopback only. The brief forbids outbound side effects beyond the model
+Binds to loopback only.  The brief forbids outbound side effects beyond the model
 provider, and nothing here talks to anything else.
 """
 
@@ -31,84 +30,72 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 sys.path.insert(0, str(REPO))
 
-from rfq.cli import _load_dotenv, default_cache  # noqa: E402
 from rfq.documents import documentize_all  # noqa: E402
 from rfq.ingest import ingest  # noqa: E402
-from rfq.pipeline import DEFAULT_CLASSIFY_MODEL, DEFAULT_EXTRACT_MODEL, DEFAULT_VISION_MODEL, run  # noqa: E402
-from ui import rollup  # noqa: E402
+from ui import engine, rollup  # noqa: E402
 
-JOBS: dict[str, dict] = {}
+JOBS: dict[str, engine.Job] = {}
 DECISIONS = HERE / "decisions.jsonl"
-MAX_UPLOAD = 40 * 1024 * 1024
+MAX_UPLOAD = 48 * 1024 * 1024
 
 
 # --------------------------------------------------------------------------- #
-# running an inbox
-# --------------------------------------------------------------------------- #
 
 
-def start_job(files: list[dict]) -> str:
-    job_id = f"job-{int(time.time() * 1000)}"
-    work = Path(tempfile.mkdtemp(prefix="rfq-ui-"))
-    inbox = work / "emails"
-    inbox.mkdir(parents=True)
+def stage_files(files: list[dict], job_id: str | None = None) -> engine.Job:
+    """Save uploads and read their headers.  No model call, nothing spent."""
+    job = JOBS.get(job_id or "")
+    if job is None or job.state == "running":
+        work = Path(tempfile.mkdtemp(prefix="rfq-ui-"))
+        inbox = work / "emails"
+        inbox.mkdir(parents=True)
+        job_id = f"job-{int(time.time() * 1000)}"
+    else:
+        inbox = job.inbox
 
-    saved = 0
     for f in files:
         name = Path(f.get("name", "mail.eml")).name
         if not name.lower().endswith(".eml"):
             name += ".eml"
+        target = inbox / name
+        n = 1
+        while target.exists():
+            target = inbox / f"{Path(name).stem}-{n}.eml"
+            n += 1
         try:
-            (inbox / name).write_bytes(base64.b64decode(f["b64"]))
-            saved += 1
+            target.write_bytes(base64.b64decode(f["b64"]))
         except Exception:
             continue
 
-    JOBS[job_id] = {
-        "id": job_id, "dir": str(work), "inbox": str(inbox), "total": saved,
-        "state": "running", "started": time.time(), "error": None,
-        "parsed": None, "requests": None, "cost": None, "traces": {},
+    queue = engine.stage(job_id, inbox)
+    fresh = engine.Job(job_id, inbox, queue)
+    if job is not None and job.state in ("staged", "done"):
+        # keep what has already been processed when more files are dropped in
+        for eid, old in job.emails.items():
+            if eid in fresh.emails and old["state"] == "done":
+                fresh.emails[eid] = old
+        fresh.cost = job.cost
+        fresh.results = job.results
+    JOBS[job_id] = fresh
+    return fresh
+
+
+def email_detail(job: engine.Job, eid: str) -> dict:
+    """The email, the documents, every model call, and the result — for one email."""
+    row = job.emails.get(eid) or {}
+    out = {
+        "id": eid,
+        "state": row.get("state"),
+        "summary": row.get("summary"),
+        "result": row.get("result"),
+        "trace": row.get("trace"),
+        "error": row.get("error"),
+        "calls": row.get("calls") or [],
     }
-    threading.Thread(target=_run_job, args=(job_id,), daemon=True).start()
-    return job_id
-
-
-def _run_job(job_id: str) -> None:
-    job = JOBS[job_id]
     try:
-        _load_dotenv()
-        parsed, cost, results = run(
-            Path(job["inbox"]),
-            cache_dir=default_cache(),
-            api_key=__import__("os").getenv("OPENAI_API_KEY"),
-            models={
-                "classify": DEFAULT_CLASSIFY_MODEL,
-                "extract": DEFAULT_EXTRACT_MODEL,
-                "vision": DEFAULT_VISION_MODEL,
-            },
-            concurrency=6,
-        )
-        job["parsed"] = parsed
-        job["cost"] = cost
-        job["traces"] = {r.id: r.trace() for r in results}
-        job["requests"] = rollup.build(parsed, Path(job["inbox"]))
-        job["state"] = "done"
+        e = ingest(job.inbox / f"{eid}.eml")
     except Exception as exc:
-        job["state"] = "error"
-        job["error"] = f"{type(exc).__name__}: {exc}"
-        job["trace"] = traceback.format_exc(limit=4)
-    finally:
-        job["elapsed"] = round(time.time() - job["started"], 1)
-
-
-def email_detail(job: dict, eid: str) -> dict:
-    """Everything the walkthrough needs for one email, assembled on demand."""
-    path = Path(job["inbox"]) / f"{eid}.eml"
-    out = {"id": eid, "trace": job["traces"].get(eid), "parsed": (job["parsed"] or {}).get(eid)}
-    try:
-        e = ingest(path)
-    except Exception as exc:
-        out["error"] = str(exc)
+        out["error"] = f"could not read the email: {exc}"
         return out
 
     out["envelope"] = {
@@ -117,22 +104,20 @@ def email_detail(job: dict, eid: str) -> dict:
         "date": e.headers.get("date"),
         "subject": e.subject,
         "from_us": e.from_us,
+        "message_id": e.headers.get("message_id"),
+        "in_reply_to": e.headers.get("in_reply_to"),
     }
-    # The split, shown rather than described: the greyed half is what the
-    # extractor never saw, which is the whole defence against quoted history.
     out["body"] = {"current": e.body_current, "quoted": e.body_quoted}
+    out["signals"] = {k: v for k, v in e.signals.items() if v}
 
     docs = []
     for att in e.attachments:
         for d in documentize_all(att):
             docs.append({
-                "source": d.source,
-                "kind": d.kind,
-                "error": d.error,
-                "truncated": d.truncated,
+                "source": d.source, "kind": d.kind, "error": d.error, "truncated": d.truncated,
                 "meta": {k: v for k, v in d.meta.items() if not k.startswith("_")},
-                "text": (d.text or "")[:40000],
-                "images": [base64.b64encode(i).decode() for i in d.images[:6]],
+                "text": (d.text or "")[:60000],
+                "images": [base64.b64encode(i).decode() for i in d.images[:8]],
                 "media_type": d.media_type,
             })
     out["documents"] = docs
@@ -140,17 +125,15 @@ def email_detail(job: dict, eid: str) -> dict:
 
 
 # --------------------------------------------------------------------------- #
-# http
-# --------------------------------------------------------------------------- #
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "RidgelineUI/0.1"
+    server_version = "RidgelineUI/0.2"
 
-    def log_message(self, *args):  # quiet
+    def log_message(self, *a):
         pass
 
-    def _send(self, code: int, body: bytes, ctype: str = "application/json") -> None:
+    def _send(self, code, body: bytes, ctype="application/json"):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
@@ -158,94 +141,95 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         try:
             self.wfile.write(body)
-        except BrokenPipeError:
+        except (BrokenPipeError, ConnectionResetError):
             pass
 
-    def _json(self, obj, code: int = 200) -> None:
-        self._send(code, json.dumps(obj, ensure_ascii=False, default=str).encode(), "application/json")
+    def _json(self, obj, code=200):
+        self._send(code, json.dumps(obj, ensure_ascii=False, default=str).encode())
 
-    def _static(self, name: str) -> None:
-        p = (HERE / "static" / name).resolve()
-        if not str(p).startswith(str((HERE / "static").resolve())) or not p.is_file():
-            self._send(404, b"not found", "text/plain")
-            return
-        ctype = mimetypes.guess_type(p.name)[0] or "application/octet-stream"
-        self._send(200, p.read_bytes(), ctype)
+    def _static(self, name):
+        root = (HERE / "static").resolve()
+        p = (root / name).resolve()
+        if not str(p).startswith(str(root)) or not p.is_file():
+            return self._send(404, b"not found", "text/plain")
+        self._send(200, p.read_bytes(), mimetypes.guess_type(p.name)[0] or "application/octet-stream")
+
+    def _job(self, q):
+        return JOBS.get(q.get("job", [""])[0])
 
     def do_GET(self):
         u = urlparse(self.path)
         q = parse_qs(u.query)
-        route = u.path
 
-        if route in ("/", "/index.html"):
+        if u.path in ("/", "/index.html"):
             return self._static("index.html")
-        if route.startswith("/static/"):
-            return self._static(route[len("/static/"):])
+        if u.path.startswith("/static/"):
+            return self._static(u.path[len("/static/"):])
 
-        if route == "/api/status":
-            job = JOBS.get(q.get("job", [""])[0])
+        if u.path == "/api/job":
+            job = self._job(q)
+            return self._json(job.snapshot() if job else {"error": "no such job"}, 200 if job else 404)
+
+        if u.path == "/api/email":
+            job = self._job(q)
             if not job:
                 return self._json({"error": "no such job"}, 404)
-            return self._json({
-                "state": job["state"], "total": job["total"], "error": job.get("error"),
-                "elapsed": job.get("elapsed", round(time.time() - job["started"], 1)),
-                "cost": job.get("cost"),
-            })
+            return self._json(email_detail(job, q.get("id", [""])[0]))
 
-        if route == "/api/requests":
-            job = JOBS.get(q.get("job", [""])[0])
-            if not job or job["state"] != "done":
+        if u.path == "/api/call":
+            # the full prompt and the full response for one model call
+            job = self._job(q)
+            eid, idx = q.get("id", [""])[0], int(q.get("n", ["0"])[0])
+            calls = (job.emails.get(eid) or {}).get("calls") if job else None
+            if not calls or idx >= len(calls):
+                return self._json({"error": "no such call"}, 404)
+            return self._json(calls[idx])
+
+        if u.path == "/api/requests":
+            job = self._job(q)
+            if not job or job.state != "done":
                 return self._json({"error": "not ready"}, 409)
-            return self._json({"requests": job["requests"], "cost": job["cost"]})
-
-        if route == "/api/email":
-            job = JOBS.get(q.get("job", [""])[0])
-            eid = q.get("id", [""])[0]
-            if not job or job["state"] != "done":
-                return self._json({"error": "not ready"}, 409)
-            if eid not in (job["parsed"] or {}):
-                return self._json({"error": "no such email"}, 404)
-            return self._json(email_detail(job, eid))
-
-        if route == "/api/decisions":
-            rows = []
-            if DECISIONS.exists():
-                for line in DECISIONS.read_text(encoding="utf-8").splitlines():
-                    try:
-                        rows.append(json.loads(line))
-                    except ValueError:
-                        pass
-            return self._json({"decisions": rows})
+            parsed = {r.id: r.to_json() for r in job.results}
+            return self._json(rollup.build(parsed, job.inbox))
 
         return self._send(404, b"not found", "text/plain")
 
     def do_POST(self):
         u = urlparse(self.path)
-        length = int(self.headers.get("Content-Length") or 0)
-        if length > MAX_UPLOAD:
+        n = int(self.headers.get("Content-Length") or 0)
+        if n > MAX_UPLOAD:
             return self._json({"error": "upload too large"}, 413)
         try:
-            payload = json.loads(self.rfile.read(length) or b"{}")
+            payload = json.loads(self.rfile.read(n) or b"{}")
         except ValueError:
             return self._json({"error": "bad json"}, 400)
 
-        if u.path == "/api/upload":
+        if u.path == "/api/stage":
             files = payload.get("files") or []
             if not files:
                 return self._json({"error": "no files"}, 400)
-            return self._json({"job": start_job(files)})
+            return self._json(stage_files(files, payload.get("job")).snapshot())
+
+        if u.path == "/api/process":
+            job = JOBS.get(payload.get("job") or "")
+            if not job:
+                return self._json({"error": "no such job"}, 404)
+            if job.state == "running":
+                return self._json({"error": "already running"}, 409)
+            engine.process(job)
+            return self._json({"ok": True})
+
+        if u.path == "/api/reset":
+            job = JOBS.pop(payload.get("job") or "", None)
+            if job:
+                shutil.rmtree(job.inbox.parent, ignore_errors=True)
+            return self._json({"ok": True})
 
         if u.path == "/api/decision":
-            # A rep accepting or overturning a line. These are the only labels that
-            # exist for mail we have no answer key for, so they are kept.
             row = {
                 "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                "email": payload.get("email"),
-                "raw": payload.get("raw"),
-                "action": payload.get("action"),
-                "was": payload.get("was"),
-                "now": payload.get("now"),
-                "note": payload.get("note"),
+                "email": payload.get("email"), "raw": payload.get("raw"),
+                "action": payload.get("action"), "was": payload.get("was"), "now": payload.get("now"),
             }
             with DECISIONS.open("a", encoding="utf-8") as fh:
                 fh.write(json.dumps(row, ensure_ascii=False) + "\n")
@@ -265,7 +249,7 @@ def main() -> int:
     srv = ThreadingHTTPServer(("127.0.0.1", a.port), Handler)
     url = f"http://127.0.0.1:{a.port}"
     print(f"Ridgeline RFQ viewer → {url}")
-    print("drop .eml files on the page.  ctrl-c to stop.")
+    print("drop .eml files, then press Process.  ctrl-c to stop.")
     if not a.no_browser:
         threading.Timer(0.6, lambda: webbrowser.open(url)).start()
     try:
@@ -274,7 +258,7 @@ def main() -> int:
         print("\nstopped")
     finally:
         for job in JOBS.values():
-            shutil.rmtree(job["dir"], ignore_errors=True)
+            shutil.rmtree(job.inbox.parent, ignore_errors=True)
     return 0
 
 

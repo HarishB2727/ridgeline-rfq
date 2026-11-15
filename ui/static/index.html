@@ -8,39 +8,47 @@
 </head>
 <body>
 
-<div id="drop-veil"><div>drop .eml files to read them</div></div>
+<div id="veil"><div class="veil-inner">drop <b>.eml</b> files</div></div>
 
 <header>
   <div class="brand">
-    <strong>Ridgeline RFQ Desk</strong>
-    <span class="muted">what the inbox reader made of your mail</span>
+    <span class="logo"></span>
+    <div>
+      <strong>Ridgeline RFQ Desk</strong>
+      <div class="muted small" id="tagline">drop the inbox, then watch it read</div>
+    </div>
   </div>
-  <div id="totals" class="totals"></div>
-  <label class="btn">
-    choose .eml files<input type="file" id="picker" multiple accept=".eml,message/rfc822" hidden>
-  </label>
+  <div class="spacer"></div>
+  <div id="meter" class="meter"></div>
+  <label class="btn ghost">add .eml<input type="file" id="picker" multiple accept=".eml,message/rfc822" hidden></label>
+  <button class="btn primary" id="process" disabled>Process</button>
+  <button class="btn ghost" id="reset" hidden>Clear</button>
 </header>
 
 <main>
-  <aside id="sidebar">
-    <div id="empty" class="empty">
-      <p><strong>Drop .eml files anywhere on this page.</strong></p>
-      <p class="muted">One email or forty. They run through the same pipeline the
-      <code>parse</code> command uses, replaying from the committed cache where it can —
-      so the dev inbox costs nothing and returns instantly.</p>
+  <aside id="queue">
+    <div class="pane-head"><span>Queue</span><span id="queue-count" class="muted small"></span></div>
+    <div id="queue-list"></div>
+    <div id="dropzone" class="dropzone">
+      <div class="dz-icon"></div>
+      <p><b>Drop .eml files here</b></p>
+      <p class="muted small">All at once, or a few at a time — drop more whenever you like.
+      Nothing is sent anywhere until you press&nbsp;Process.</p>
+      <p class="muted small">Try <code>data/dev/emails/</code></p>
     </div>
-    <div id="parties"></div>
   </aside>
 
-  <section id="detail">
-    <div class="placeholder muted">Select a request on the left.</div>
+  <section id="stage">
+    <div id="welcome" class="welcome">
+      <h1>Watch an inbox get read</h1>
+      <p class="lede">Every email goes through six steps. Two of them call a model; the other
+      four are plain code. This shows each one — what went in, what the model was asked
+      <em>word for word</em>, and what came back.</p>
+      <ol class="steps-preview" id="steps-preview"></ol>
+    </div>
+    <div id="detail" hidden></div>
   </section>
 </main>
-
-<div id="progress" class="progress hidden">
-  <div class="spinner"></div>
-  <div id="progress-text">reading…</div>
-</div>
 
 <script src="/static/app.js"></script>
 </body>
