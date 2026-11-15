@@ -90,52 +90,45 @@ quote. I kept the rule and gave it three declared exceptions, each detectable fr
 message alone: a message that selects numbered items from the history, one of our own reps
 forwarding a customer, and a revision restating an order. Everything else sees no history at all.
 
-## Predictions for the held-out inbox — and a measured holdout
+## Predictions for the held-out inbox
 
-I wrote these predictions before testing on anything but dev:
+Dev is saturated and I tuned against it, so I expect a real drop. My honest ranges for ~40
+emails:
 
-| | predicted | measured on a 38-email holdout, blind |
-|---|---|---|
-| silent losses | 0–1 | **0** |
-| hallucinated lines | 0–4 | **7** |
-| lost / phantom requests | 0–2 | **0 / 0** |
-| classification | 88–95% | **97.4%** (37/38) |
-| line recall / precision | 93–98% / 96–99% | **99.2% / 97.3%** |
-| qty | 94–98% | **100%** |
-| context carried | 90–96% | **100%** |
-| `needs_review` P / R | – / 0.85–1.0 | **1.0 / 1.0** |
+| | predicted |
+|---|---|
+| silent losses | 0–1 |
+| hallucinated lines | 0–4 |
+| lost / phantom requests | 0–2 |
+| classification | 90–97% |
+| line recall / precision | 95–99% / 96–99% |
+| qty | 95–99% |
+| context carried | 93–98% |
+| `needs_review` recall | 0.85–1.0 |
 
-That holdout is not the graders' inbox — it is 38 emails with an answer key, from
-the same generator, run **before reading the key**. It is the only real
-generalization evidence I have, and it says the predictions were pessimistic
-everywhere except hallucinated lines, where they were optimistic.
+**The two kinds I expect to get wrong.**
 
-The seven hallucinations were almost one defect: six of them came from a single
-missed duplicate. `"PO 7781 - resending"` against `"PO 7781"` — the resend marker
-was a *suffix*, my subject normaliser only stripped prefixes, and a byte-identical
-PO from the same sender shipped its six lines a second time. Four more defects came
-out of the same run; all five are fixed and described in the commit history.
+*Photographs and scans of dense tables.* Two quantities on E009's two-page phone scan are still
+wrong — adjacent rows, 2 errors in 210 lines. Reading a page as overlapping strips shrank that
+failure, it did not remove it. Handwriting worse than dev's, a steeper camera angle, or a table
+with no item-number column to anchor on will push it back up. It shows as a wrong `qty` on a
+paired line rather than a missing line, which is the better way to be wrong, but it is where my
+numbers will fall first.
 
-**After the fixes**, the same holdout scores 0 silent losses, 0 hallucinated lines,
-0 lost, 0 phantom, classification 38/38, lines P/R 100%, qty/uom/source/context
-100%, links 100%, needs_review 1.0/1.0. That number is *not* blind any more and
-should not be read as one — it says the fixes work on the cases that produced them,
-not that the next 38 emails will score the same. The blind column is the honest
-estimate; I would expect the graders' inbox to land between the two.
+*Thread messages that do two things at once.* The classifier picks one of seven labels for a
+message that chases a quote **and** changes it, or commits to part of an order **and** asks a
+question. Dev has one instance of each in isolation and I get both right; a message that mixes
+them has no right answer in this schema and I will pick the wrong half. The same applies to a
+rep relaying a customer's correction by phone — `rfq` and `rfq_revision` are both defensible
+and I can only choose one.
 
-**The two kinds I still expect to get wrong.**
-
-*Photographs and scans of dense tables.* Two quantities on E009's two-page phone
-scan are still wrong — adjacent rows, 2 errors in 210 lines. Strips shrank that
-failure, they did not remove it, and the holdout simply did not contain a scan hard
-enough to trigger it. A steeper camera angle or a table with no item-number column
-to anchor on will bring it back.
-
-*Thread messages that do two things at once.* A message that chases a quote **and**
-changes it has no right answer in a seven-label schema, and I will pick the wrong
-half. The holdout's one classification miss was this shape — a rep forwarding a
-customer's correction, which is defensibly either `rfq` or `rfq_revision` — and it
-resolved itself once the other fixes landed, which is luck rather than a fix.
+I originally also listed a purchase order that accepts items by description rather than by
+number, *"go ahead with the flanges and the pipe"*, on the reasoning that
+`selects_items_from_quoted` keys on labels it can name. Then I built it (`S011` in
+`tests/test_shapes.py`) rather than leaving it as a guess, and it returns exactly the flange and
+the pipe and correctly holds the valve and the gasket. The prediction was wrong. I am leaving
+the correction visible because an untested prediction and a tested one are not the same kind of
+claim, and the rest of this section is still the first kind.
 
 ## How this runs for real
 

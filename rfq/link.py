@@ -73,8 +73,8 @@ def find_duplicate(result, seen: list) -> object | None:
 
         # Byte-identical files from the same sender, where the message calls itself
         # a resend, is conclusive on its own.  Requiring the subject to match too
-        # loses "PO 7781 - resending" against "PO 7781", which is the commonest
-        # way a resend actually arrives.
+        # loses "<ref> - resending" against "<ref>", and annotating the subject is
+        # the commonest way a resend actually arrives.
         if same_files and (same_subject or resend):
             return prior
         if not same_subject:

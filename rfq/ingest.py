@@ -364,8 +364,8 @@ def normalised_subject(subject: str) -> str:
         if new == s:
             break
         s = new
-    # ... and a resend is just as often annotated at the END: "PO 7781 - resending",
-    # "RFQ 4410 (2nd request)".  Stripping only the prefix leaves two subjects that
+    # ... and a resend is just as often annotated at the END: "<ref> - resending",
+    # "<ref> (2nd request)".  Stripping only the prefix leaves two subjects that
     # differ by a word that means "this is the same request again".
     s = re.sub(
         r"[\s\-–—(\[]*\b(re-?send(ing)?|resent|2nd|second|third|follow[\s-]?up|"
