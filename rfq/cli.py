@@ -20,19 +20,34 @@ from .pipeline import DEFAULT_CLASSIFY_MODEL, DEFAULT_EXTRACT_MODEL, DEFAULT_VIS
 REPO = Path(__file__).resolve().parent.parent
 
 
+def default_cache() -> Path:
+    """Where the recorded answers live.
+
+    Installed with `pip install -e .` the package sits in the repo and REPO is right.
+    Installed without -e it sits in site-packages, where there is no cache — so the
+    working directory wins when it has one.  Getting this wrong silently turns a
+    keyless replay into 'no recorded answer for this input' on every email.
+    """
+    for candidate in (Path.cwd() / "cache", REPO / "cache"):
+        if candidate.is_dir():
+            return candidate
+    return Path.cwd() / "cache"
+
+
 def _load_dotenv() -> None:
     """Read OPENAI_API_KEY from a .env beside the repo if the environment has none."""
     if os.getenv("OPENAI_API_KEY"):
         return
-    env = REPO / ".env"
-    if not env.exists():
-        return
-    for line in env.read_text(encoding="utf-8", errors="replace").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
+    for env in (Path.cwd() / ".env", REPO / ".env"):
+        if not env.is_file():
             continue
-        k, v = line.split("=", 1)
-        os.environ.setdefault(k.strip(), v.strip().strip("'\""))
+        for line in env.read_text(encoding="utf-8", errors="replace").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip().strip("'\""))
+        return
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -42,7 +57,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("parse", help="read an inbox of .eml files into parsed.json")
     p.add_argument("--emails", type=Path, required=True, help="directory of .eml files")
     p.add_argument("--out", type=Path, required=True, help="where to write parsed.json")
-    p.add_argument("--cache", type=Path, default=REPO / "cache", help="recorded model answers")
+    p.add_argument("--cache", type=Path, default=None, help="recorded model answers (default: ./cache, else the repo's)")
     p.add_argument("--cost-report", type=Path, default=None, help="where to write the cost summary")
     p.add_argument("--traces", type=Path, default=None, help="directory for per-email traces")
     p.add_argument("--concurrency", type=int, default=6)
@@ -67,7 +82,7 @@ def main(argv: list[str] | None = None) -> int:
 
     parsed, cost, results = run(
         args.emails,
-        cache_dir=args.cache,
+        cache_dir=args.cache or default_cache(),
         api_key=os.getenv("OPENAI_API_KEY"),
         models={
             "classify": args.model_classify,
