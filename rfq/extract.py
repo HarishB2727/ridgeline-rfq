@@ -17,18 +17,25 @@ from .llm import image_part, text_part
 from .prompts import EXTRACT_IMAGE_SYSTEM, EXTRACT_TEXT_SYSTEM, REVISE_SYSTEM, ambient_context
 from .schemas import EXTRACT_SCHEMA, REVISE_SCHEMA
 
-MAX_DOC_CHARS = 60_000
 CHUNK_CHARS = 18_000
+CHUNK_ROWS = 120
 
 
 def _chunks(text: str) -> list[str]:
-    """Split a long document on blank lines / sheet breaks, never mid-row."""
-    if len(text) <= CHUNK_CHARS:
+    """Split a long document, never mid-row.
+
+    Bounded by ROWS as well as characters, because the binding constraint is the
+    model's *output*: every row comes back as a raw, a description and its context,
+    roughly 70 tokens. Six hundred rows in one call is a cheap-looking prompt and a
+    40,000-token answer that gets cut off at the budget — and a truncated answer
+    loses the whole document, not the tail of it.
+    """
+    lines = text.splitlines(keepends=True)
+    if len(lines) <= CHUNK_ROWS and len(text) <= CHUNK_CHARS:
         return [text]
-    out, cur = [], []
-    size = 0
-    for line in text.splitlines(keepends=True):
-        if size + len(line) > CHUNK_CHARS and cur:
+    out, cur, size = [], [], 0
+    for line in lines:
+        if cur and (len(cur) >= CHUNK_ROWS or size + len(line) > CHUNK_CHARS):
             out.append("".join(cur))
             cur, size = [], 0
         cur.append(line)
@@ -135,7 +142,7 @@ def extract_document(email, doc, documents, runner, *, text_model: str, vision_m
 
 
 def _extract_text(email, doc, ctx, runner, text_model: str) -> dict:
-    text = doc.text[:MAX_DOC_CHARS]
+    text = doc.text  # already row-capped and flagged in documentize()
     pieces = _chunks(text)
     merged = {"document_role": "no_items", "notes": "", "unresolvable_reference": None, "lines": []}
     for i, piece in enumerate(pieces):

@@ -95,7 +95,19 @@ def apply_needs_review(result) -> None:
         if doc.kind == "unreadable":
             reasons.append(f"{doc.source} could not be read: {doc.error}")
         elif doc.truncated:
-            reasons.append(f"{doc.source} was longer than the page limit and was only partly read")
+            total, read = doc.meta.get("rows_total"), doc.meta.get("rows_read")
+            if total and read:
+                reasons.append(
+                    f"{doc.source} is too long to read in full: {read} of {total} rows were read, "
+                    f"the remaining {total - read} were not"
+                )
+            else:
+                pages, got = doc.meta.get("pages"), doc.meta.get("pages_read")
+                reasons.append(
+                    f"{doc.source} is too long to read in full: {got} of {pages} pages were read"
+                    if pages and got
+                    else f"{doc.source} was only partly read"
+                )
 
     promised = result.email.signals["mentions_attachment"] or result.email.signals["mentions_picture"]
     item_docs = [d for d in result.documents if d.source != "body" and d.kind != "unreadable"]

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import csv
 import io
+import os
 import re
 import zipfile
 from dataclasses import dataclass, field
@@ -354,6 +355,29 @@ def read_eml(data: bytes, source: str) -> Document:
 # --------------------------------------------------------------------------- #
 
 
+MAX_DOC_ROWS = int(os.getenv("RFQ_MAX_DOC_ROWS", "800"))
+
+
+def cap_rows(doc: Document, limit: int = MAX_DOC_ROWS) -> Document:
+    """Refuse to read an unbounded document — but say so.
+
+    A 3,000-line BOM has to stop somewhere: reading it whole costs several dollars
+    for one email and overruns the model's output budget. The cap is not the
+    interesting part; the flag is. Truncating in silence returns a partial order
+    that looks exactly like a complete one, which is a silent loss wearing the
+    clothes of a successful parse.
+    """
+    if doc.kind not in ("text", "mixed") or not doc.text:
+        return doc
+    lines = doc.text.splitlines()
+    if len(lines) <= limit:
+        return doc
+    doc.text = "\n".join(lines[:limit])
+    doc.truncated = True
+    doc.meta.update(rows_total=len(lines), rows_read=limit)
+    return doc
+
+
 def documentize(attachment, page_cap: int = DEFAULT_PAGE_CAP) -> Document:
     """One attachment -> one Document.  Never raises: a failure is a flagged Document."""
     source, data, mime = attachment.filename, attachment.data, attachment.mime
@@ -363,19 +387,19 @@ def documentize(attachment, page_cap: int = DEFAULT_PAGE_CAP) -> Document:
     kind = sniff(data, mime, source)
     try:
         if kind == "xlsx":
-            return read_xlsx(data, source)
+            return cap_rows(read_xlsx(data, source))
         if kind == "docx":
-            return read_docx(data, source)
+            return cap_rows(read_docx(data, source))
         if kind == "csv":
-            return read_csv(data, source)
+            return cap_rows(read_csv(data, source))
         if kind == "pdf":
-            return read_pdf(data, source, page_cap)
+            return cap_rows(read_pdf(data, source, page_cap))
         if kind == "image":
             return read_image(data, source, mime)
         if kind == "eml":
             return read_eml(data, source)
         if kind == "text":
-            return Document(source=source, kind="text", text=data.decode("utf-8", "replace").strip())
+            return cap_rows(Document(source=source, kind="text", text=data.decode("utf-8", "replace").strip()))
         if kind == "legacy_office":
             return Document(
                 source=source,

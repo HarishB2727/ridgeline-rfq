@@ -1,0 +1,1225 @@
+{
+  "cost_usd": 0.084392,
+  "created": "2026-11-15T08:29:09Z",
+  "key": "8bd2f2ce85a2c562cdd64e2b8efc5db9f213c9e871b4df38890b6f25095f4844",
+  "model": "gpt-4.1",
+  "prompt_version": "v1",
+  "request": {
+    "parts": [
+      "=== EMAIL CONTEXT (for understanding only) ===\nFrom: Ana Pereira <ana@summitrefit.example>\nDate: Tue, 03 Nov 2026 08:00:00 -0500\nSubject: Unit 9 piping package - full BOM\nAttachments: Unit9_BOM.xlsx\n--- body of the current message ---\nHello,\n\nAttached is the full BOM for Unit 9. Please quote all lines.\n\nAna\n\n=== THE DOCUMENT: Unit9_BOM.xlsx (part 2 of 3) ===\n--- opening lines of this document, for context ---\n=== SHEET: FITTINGS - SW 3000# ===\nSummit Refit - Unit 9 - full BOM\nALL FITTINGS SW 3000# A105 UNLESS NOTED\nITEM | QTY | UOM | SIZE | DESCRIPTION\n1 | 2 | EA | 3/4\" | 45 Elbow\n2 | 3 | EA | 1\" | Tee\n3 | 4 | EA | 1-1/4\" | Coupling\n4 | 5 | EA | 1-1/2\" | Cap\n--- continues ---\n117 | 38 | EA | 1-1/4\" | Coupling\n118 | 39 | EA | 1-1/2\" | Cap\n119 | 40 | EA | 2\" | Union\n120 | 1 | EA | 1/2\" | 90 Elbow\n121 | 2 | EA | 3/4\" | 45 Elbow\n122 | 3 | EA | 1\" | Tee\n123 | 4 | EA | 1-1/4\" | Coupling\n124 | 5 | EA | 1-1/2\" | Cap\n125 | 6 | EA | 2\" | Union\n126 | 7 | EA | 1/2\" | 90 Elbow\n127 | 8 | EA | 3/4\" | 45 Elbow\n128 | 9 | EA | 1\" | Tee\n129 | 10 | EA | 1-1/4\" | Coupling\n130 | 11 | EA | 1-1/2\" | Cap\n131 | 12 | EA | 2\" | Union\n132 | 13 | EA | 1/2\" | 90 Elbow\n133 | 14 | EA | 3/4\" | 45 Elbow\n134 | 15 | EA | 1\" | Tee\n135 | 16 | EA | 1-1/4\" | Coupling\n136 | 17 | EA | 1-1/2\" | Cap\n137 | 18 | EA | 2\" | Union\n138 | 19 | EA | 1/2\" | 90 Elbow\n139 | 20 | EA | 3/4\" | 45 Elbow\n140 | 21 | EA | 1\" | Tee\n141 | 22 | EA | 1-1/4\" | Coupling\n142 | 23 | EA | 1-1/2\" | Cap\n143 | 24 | EA | 2\" | Union\n144 | 25 | EA | 1/2\" | 90 Elbow\n145 | 26 | EA | 3/4\" | 45 Elbow\n146 | 27 | EA | 1\" | Tee\n147 | 28 | EA | 1-1/4\" | Coupling\n148 | 29 | EA | 1-1/2\" | Cap\n149 | 30 | EA | 2\" | Union\n150 | 31 | EA | 1/2\" | 90 Elbow\n151 | 32 | EA | 3/4\" | 45 Elbow\n152 | 33 | EA | 1\" | Tee\n153 | 34 | EA | 1-1/4\" | Coupling\n154 | 35 | EA | 1-1/2\" | Cap\n155 | 36 | EA | 2\" | Union\n156 | 37 | EA | 1/2\" | 90 Elbow\n157 | 38 | EA | 3/4\" | 45 Elbow\n158 | 39 | EA | 1\" | Tee\n159 | 40 | EA | 1-1/4\" | Coupling\n160 | 1 | EA | 1-1/2\" | Cap\n161 | 2 | EA | 2\" | Union\n162 | 3 | EA | 1/2\" | 90 Elbow\n163 | 4 | EA | 3/4\" | 45 Elbow\n164 | 5 | EA | 1\" | Tee\n165 | 6 | EA | 1-1/4\" | Coupling\n166 | 7 | EA | 1-1/2\" | Cap\n167 | 8 | EA | 2\" | Union\n168 | 9 | EA | 1/2\" | 90 Elbow\n169 | 10 | EA | 3/4\" | 45 Elbow\n170 | 11 | EA | 1\" | Tee\n171 | 12 | EA | 1-1/4\" | Coupling\n172 | 13 | EA | 1-1/2\" | Cap\n173 | 14 | EA | 2\" | Union\n174 | 15 | EA | 1/2\" | 90 Elbow\n175 | 16 | EA | 3/4\" | 45 Elbow\n176 | 17 | EA | 1\" | Tee\n177 | 18 | EA | 1-1/4\" | Coupling\n178 | 19 | EA | 1-1/2\" | Cap\n179 | 20 | EA | 2\" | Union\n180 | 21 | EA | 1/2\" | 90 Elbow\n181 | 22 | EA | 3/4\" | 45 Elbow\n182 | 23 | EA | 1\" | Tee\n183 | 24 | EA | 1-1/4\" | Coupling\n184 | 25 | EA | 1-1/2\" | Cap\n185 | 26 | EA | 2\" | Union\n186 | 27 | EA | 1/2\" | 90 Elbow\n187 | 28 | EA | 3/4\" | 45 Elbow\n188 | 29 | EA | 1\" | Tee\n189 | 30 | EA | 1-1/4\" | Coupling\n190 | 31 | EA | 1-1/2\" | Cap\n191 | 32 | EA | 2\" | Union\n192 | 33 | EA | 1/2\" | 90 Elbow\n193 | 34 | EA | 3/4\" | 45 Elbow\n194 | 35 | EA | 1\" | Tee\n195 | 36 | EA | 1-1/4\" | Coupling\n196 | 37 | EA | 1-1/2\" | Cap\n197 | 38 | EA | 2\" | Union\n198 | 39 | EA | 1/2\" | 90 Elbow\n199 | 40 | EA | 3/4\" | 45 Elbow\n200 | 1 | EA | 1\" | Tee\n201 | 2 | EA | 1-1/4\" | Coupling\n202 | 3 | EA | 1-1/2\" | Cap\n203 | 4 | EA | 2\" | Union\n204 | 5 | EA | 1/2\" | 90 Elbow\n205 | 6 | EA | 3/4\" | 45 Elbow\n206 | 7 | EA | 1\" | Tee\n207 | 8 | EA | 1-1/4\" | Coupling\n208 | 9 | EA | 1-1/2\" | Cap\n209 | 10 | EA | 2\" | Union\n210 | 11 | EA | 1/2\" | 90 Elbow\n211 | 12 | EA | 3/4\" | 45 Elbow\n212 | 13 | EA | 1\" | Tee\n213 | 14 | EA | 1-1/4\" | Coupling\n214 | 15 | EA | 1-1/2\" | Cap\n215 | 16 | EA | 2\" | Union\n216 | 17 | EA | 1/2\" | 90 Elbow\n217 | 18 | EA | 3/4\" | 45 Elbow\n218 | 19 | EA | 1\" | Tee\n219 | 20 | EA | 1-1/4\" | Coupling\n220 | 21 | EA | 1-1/2\" | Cap\n221 | 22 | EA | 2\" | Union\n222 | 23 | EA | 1/2\" | 90 Elbow\n223 | 24 | EA | 3/4\" | 45 Elbow\n224 | 25 | EA | 1\" | Tee\n225 | 26 | EA | 1-1/4\" | Coupling\n226 | 27 | EA | 1-1/2\" | Cap\n227 | 28 | EA | 2\" | Union\n228 | 29 | EA | 1/2\" | 90 Elbow\n229 | 30 | EA | 3/4\" | 45 Elbow\n230 | 31 | EA | 1\" | Tee\n231 | 32 | EA | 1-1/4\" | Coupling\n232 | 33 | EA | 1-1/2\" | Cap\n233 | 34 | EA | 2\" | Union\n234 | 35 | EA | 1/2\" | 90 Elbow\n235 | 36 | EA | 3/4\" | 45 Elbow\n236 | 37 | EA | 1\" | Tee\n"
+    ],
+    "system": "You are an experienced inside sales rep at Ridgeline Industrial Supply, a distributor of pipe, fittings, flanges, valves, gaskets and bolting.  Its RFQ inbox is rfq@ridgeline-supply.example and its quotes are numbered Q-26-xxxxx.\n\nYou are reading ONE document from a customer's email and typing its line items into a quote.\n\nWHAT COUNTS AS A LINE\nOne line per thing the customer wants priced or bought. These are NOT lines:\n  - section headings and group titles\n  - column headers (ITEM / QTY / UOM / SIZE / DESCRIPTION)\n  - totals, subtotals, freight, tax, page headers and footers\n  - unit prices and extended amounts (on a PO they belong TO a line; they are not lines)\n  - addresses, signatures, phone numbers, reference numbers, confidentiality notices\n  - rows that are struck through, crossed out or lined out: the customer deleted them\n  - an older revision of a list when a newer one is present\n\nDESCRIPTION — the item, self-contained\nWrite it as you would type it into the quote without re-reading the email: the line's own\nwords PLUS every piece of context that applies to it, and nothing that does not.\n\nContext travels DOWN to a line from: the email subject, the sentence that introduces the\nlist, a section heading, a sheet or tab name, a form field (Material:, Rating:, Class:), a\ncolumn header, or an earlier line the line refers back to.\n\nContext has SCOPE. A heading applies to the lines beneath it until the next heading of the\nsame rank, and never to lines in another section. If one section says the pipe is SCH 40\nA53B and another says the fittings are 150# malleable iron, the pipe spec must not appear on\na fitting and the fitting spec must not appear on a pipe. Putting the wrong section's spec on\na line is the same mistake as missing the line.\n\nA line that states its own value OVERRIDES an inherited default. A sheet-wide note reading\n\"ALL FITTINGS <spec-A> UNLESS NOTED\" together with a row that says \"<spec-B>\" means that row\nis spec-B, and its description must NOT mention spec-A.\n\nResolve shorthand against the line above: ditto marks (,, \" -\"), \"same size\", \"same as\nabove\", \"do.\", a repeated blank column.\n\nNever invent a specification the document does not give. If a schedule, rating or material is\nsimply absent, leave it absent — a guessed spec is a wrong quote.\n\nQTY and UOM\nqty is the number the customer stated. Do not convert it and do not infer it.\nA size, schedule, pressure class, length, part number, line number or price is NEVER a quantity.\nA vague amount (\"a couple\", \"a few\", \"enough for the job\") is null — do not guess a number.\nA number spelled out in words is a number.\nuom is exactly one of EA FT M IN BX PK PR DZ RL LB SET GAL BAG CS, or null when the customer\nstated no unit. jts / joints / lengths / pieces / pcs / ea are EA. rolls is RL. sets is SET.\nboxes is BX. feet, ft and ' are FT. If a stated unit is not in that list, use null.\n\nRAW\n`raw` is the line as it appears in THIS document, verbatim: a table row's cells joined with\n\" | \", a handwritten line as you read it. It is what pairs your line with the rep's, so stay\nclose to the source and do not tidy it.\n\nCONTEXT_FROM\nFor each line, name where its inherited context came from, e.g. \"sheet name: ...\" or\n\"section heading: ...\" or \"email subject\". One short entry per source. This is read by a\nhuman checking your work.\n\nONLY THIS DOCUMENT\nYou are shown the email's subject and body as context. Use them to understand the document —\nand a quantity the body states about this document's contents counts. But every line you\nreturn must appear in THIS document. Never copy a line that lives in another attachment.\n\nA sentence that POINTS AT an item held somewhere else is not itself a line. \"Quote 3 of these,\nsame as the one in the picture\", \"price everything on the attached sheet\", \"the items below\nare per the BOM\" — in each case the item lives in that attachment or picture, which is read\nseparately, and its quantity is applied there. Returning the sentence as well would quote the\nsame item twice.\n\nIF IT IS NOT A LIST\nIf the document is real but has nothing to price, return document_role \"no_items\" and no lines.\n\nunresolvable_reference is only for items identified by something OUTSIDE THE WHOLE EMAIL —\n\"same as our last order\", \"per the drawing we discussed\", \"the usual\". A covering note whose\nitems live in an attachment is completely normal: that attachment is read separately and the\nitems are not lost. Do not report it."
+  },
+  "response": {
+    "document_role": "item_list",
+    "lines": [
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 38,
+        "raw": "117 | 38 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 39,
+        "raw": "118 | 39 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 40,
+        "raw": "119 | 40 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 1,
+        "raw": "120 | 1 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 2,
+        "raw": "121 | 2 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 3,
+        "raw": "122 | 3 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 4,
+        "raw": "123 | 4 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 5,
+        "raw": "124 | 5 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 6,
+        "raw": "125 | 6 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 7,
+        "raw": "126 | 7 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 8,
+        "raw": "127 | 8 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 9,
+        "raw": "128 | 9 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 10,
+        "raw": "129 | 10 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 11,
+        "raw": "130 | 11 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 12,
+        "raw": "131 | 12 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 13,
+        "raw": "132 | 13 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 14,
+        "raw": "133 | 14 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 15,
+        "raw": "134 | 15 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 16,
+        "raw": "135 | 16 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 17,
+        "raw": "136 | 17 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 18,
+        "raw": "137 | 18 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 19,
+        "raw": "138 | 19 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 20,
+        "raw": "139 | 20 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 21,
+        "raw": "140 | 21 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 22,
+        "raw": "141 | 22 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 23,
+        "raw": "142 | 23 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 24,
+        "raw": "143 | 24 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 25,
+        "raw": "144 | 25 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 26,
+        "raw": "145 | 26 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 27,
+        "raw": "146 | 27 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 28,
+        "raw": "147 | 28 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 29,
+        "raw": "148 | 29 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 30,
+        "raw": "149 | 30 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 31,
+        "raw": "150 | 31 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 32,
+        "raw": "151 | 32 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 33,
+        "raw": "152 | 33 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 34,
+        "raw": "153 | 34 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 35,
+        "raw": "154 | 35 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 36,
+        "raw": "155 | 36 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 37,
+        "raw": "156 | 37 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 38,
+        "raw": "157 | 38 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 39,
+        "raw": "158 | 39 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 40,
+        "raw": "159 | 40 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 1,
+        "raw": "160 | 1 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 2,
+        "raw": "161 | 2 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 3,
+        "raw": "162 | 3 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 4,
+        "raw": "163 | 4 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 5,
+        "raw": "164 | 5 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 6,
+        "raw": "165 | 6 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 7,
+        "raw": "166 | 7 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 8,
+        "raw": "167 | 8 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 9,
+        "raw": "168 | 9 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 10,
+        "raw": "169 | 10 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 11,
+        "raw": "170 | 11 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 12,
+        "raw": "171 | 12 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 13,
+        "raw": "172 | 13 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 14,
+        "raw": "173 | 14 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 15,
+        "raw": "174 | 15 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 16,
+        "raw": "175 | 16 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 17,
+        "raw": "176 | 17 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 18,
+        "raw": "177 | 18 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 19,
+        "raw": "178 | 19 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 20,
+        "raw": "179 | 20 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 21,
+        "raw": "180 | 21 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 22,
+        "raw": "181 | 22 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 23,
+        "raw": "182 | 23 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 24,
+        "raw": "183 | 24 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 25,
+        "raw": "184 | 25 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 26,
+        "raw": "185 | 26 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 27,
+        "raw": "186 | 27 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 28,
+        "raw": "187 | 28 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 29,
+        "raw": "188 | 29 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 30,
+        "raw": "189 | 30 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 31,
+        "raw": "190 | 31 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 32,
+        "raw": "191 | 32 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 33,
+        "raw": "192 | 33 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 34,
+        "raw": "193 | 34 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 35,
+        "raw": "194 | 35 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 36,
+        "raw": "195 | 36 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 37,
+        "raw": "196 | 37 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 38,
+        "raw": "197 | 38 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 39,
+        "raw": "198 | 39 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 40,
+        "raw": "199 | 40 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 1,
+        "raw": "200 | 1 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 2,
+        "raw": "201 | 2 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 3,
+        "raw": "202 | 3 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 4,
+        "raw": "203 | 4 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 5,
+        "raw": "204 | 5 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 6,
+        "raw": "205 | 6 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 7,
+        "raw": "206 | 7 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 8,
+        "raw": "207 | 8 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 9,
+        "raw": "208 | 9 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 10,
+        "raw": "209 | 10 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 11,
+        "raw": "210 | 11 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 12,
+        "raw": "211 | 12 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 13,
+        "raw": "212 | 13 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 14,
+        "raw": "213 | 14 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 15,
+        "raw": "214 | 15 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 16,
+        "raw": "215 | 16 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 17,
+        "raw": "216 | 17 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 18,
+        "raw": "217 | 18 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 19,
+        "raw": "218 | 19 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 20,
+        "raw": "219 | 20 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 21,
+        "raw": "220 | 21 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 22,
+        "raw": "221 | 22 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 23,
+        "raw": "222 | 23 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 24,
+        "raw": "223 | 24 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 25,
+        "raw": "224 | 25 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 26,
+        "raw": "225 | 26 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 27,
+        "raw": "226 | 27 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 28,
+        "raw": "227 | 28 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 29,
+        "raw": "228 | 29 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 30,
+        "raw": "229 | 30 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 31,
+        "raw": "230 | 31 | EA | 1\" | Tee",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Coupling, 1-1/4\", SW 3000# A105",
+        "qty": 32,
+        "raw": "231 | 32 | EA | 1-1/4\" | Coupling",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Cap, 1-1/2\", SW 3000# A105",
+        "qty": 33,
+        "raw": "232 | 33 | EA | 1-1/2\" | Cap",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Union, 2\", SW 3000# A105",
+        "qty": 34,
+        "raw": "233 | 34 | EA | 2\" | Union",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "90 Elbow, 1/2\", SW 3000# A105",
+        "qty": 35,
+        "raw": "234 | 35 | EA | 1/2\" | 90 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "45 Elbow, 3/4\", SW 3000# A105",
+        "qty": 36,
+        "raw": "235 | 36 | EA | 3/4\" | 45 Elbow",
+        "uom": "EA"
+      },
+      {
+        "context_from": [
+          "sheet name: FITTINGS - SW 3000#",
+          "sheet-wide note: ALL FITTINGS SW 3000# A105 UNLESS NOTED"
+        ],
+        "description": "Tee, 1\", SW 3000# A105",
+        "qty": 37,
+        "raw": "236 | 37 | EA | 1\" | Tee",
+        "uom": "EA"
+      }
+    ],
+    "notes": "This is part 2 of a multi-part BOM, quoting lines 117-236 from the FITTINGS - SW 3000# sheet. All context is applied as per sheet heading and sheet-wide note.",
+    "unresolvable_reference": null
+  },
+  "schema": "document_line_items",
+  "usage": {
+    "completion_tokens": 9682,
+    "prompt_tokens": 3468
+  }
+}
