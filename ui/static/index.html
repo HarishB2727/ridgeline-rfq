@@ -1,22 +1,20 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ridgeline RFQ Desk</title>
+<title>Ridgeline RFQ Pipeline</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
-<div id="veil"><div class="veil-inner">drop <b>.eml</b> files</div></div>
+<div id="veil"><div class="veil-inner"><span>drop <b>.eml</b> files</span></div></div>
 
 <header>
-  <div class="brand">
-    <span class="logo"></span>
-    <div>
-      <strong>Ridgeline RFQ Desk</strong>
-      <div class="muted small" id="tagline">drop the inbox, then watch it read</div>
-    </div>
+  <span class="logo"></span>
+  <div class="title">
+    <strong>Ridgeline RFQ Pipeline</strong>
+    <span class="muted small">every email, every stage, every model call</span>
   </div>
   <div class="spacer"></div>
   <div id="meter" class="meter"></div>
@@ -25,30 +23,18 @@
   <button class="btn ghost" id="reset" hidden>Clear</button>
 </header>
 
-<main>
-  <aside id="queue">
-    <div class="pane-head"><span>Queue</span><span id="queue-count" class="muted small"></span></div>
-    <div id="queue-list"></div>
-    <div id="dropzone" class="dropzone">
-      <div class="dz-icon"></div>
-      <p><b>Drop .eml files here</b></p>
-      <p class="muted small">All at once, or a few at a time — drop more whenever you like.
-      Nothing is sent anywhere until you press&nbsp;Process.</p>
-      <p class="muted small">Try <code>data/dev/emails/</code></p>
-    </div>
-  </aside>
+<!-- the pipeline, as the column headers of everything below -->
+<div id="pipebar" class="pipebar"></div>
 
-  <section id="stage">
-    <div id="welcome" class="welcome">
-      <h1>Watch an inbox get read</h1>
-      <p class="lede">Every email goes through six steps. Two of them call a model; the other
-      four are plain code. This shows each one — what went in, what the model was asked
-      <em>word for word</em>, and what came back.</p>
-      <ol class="steps-preview" id="steps-preview"></ol>
-    </div>
-    <div id="detail" hidden></div>
-  </section>
-</main>
+<div id="grid" class="grid"></div>
+
+<div id="dropzone" class="dropzone">
+  <div class="dz-icon"></div>
+  <h1>Drop an inbox here</h1>
+  <p class="lede">All at once, or a few at a time. Dropping only reads the headers —
+  nothing is sent anywhere until you press <b>Process</b>.</p>
+  <p class="muted small">try <code>data/dev/emails/</code></p>
+</div>
 
 <script src="/static/app.js"></script>
 </body>

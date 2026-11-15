@@ -127,6 +127,8 @@ def stage(job_id: str, inbox: Path) -> list[dict]:
                 attachments=[a.filename for a in e.attachments],
                 has_thread=bool(e.body_quoted),
                 from_us=e.from_us,
+                body_chars=len(e.body_current or ""),
+                quoted_chars=len(e.body_quoted or ""),
             )
         except Exception as exc:
             row.update(sender="?", subject=f"(could not be parsed: {exc})", attachments=[])
@@ -154,7 +156,10 @@ def _run(job: Job) -> None:
         current = {"id": None}
 
         def observe(rec: dict) -> None:
-            eid = current["id"]
+            # The call carries the email it was made for, which is also right during
+            # phase B — a revision's merge happens after the per-email loop has ended,
+            # so trusting the loop variable loses it.
+            eid = rec.get("email_id") or current["id"]
             if eid is None or eid not in job.emails:
                 return
             label, where = _label(rec)
