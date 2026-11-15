@@ -48,6 +48,10 @@ is tested below.
 | extract (text) | `gpt-4.1` | the context-carrying judgement lives here |
 | extract (pictures) | `gpt-4.1` | photos, scans, pasted screenshots |
 
+Temperature is pinned at **1.0** (`RFQ_TEMPERATURE`) and is part of the cache key. Not zero:
+turning it down makes the model transcribe a row rather than rewrite it self-contained, which
+is the whole task — the measurement is in `rfq/llm.py` and `DECISIONS.md`.
+
 Override per run with `--model-classify / --model-extract / --model-vision`, or the env vars
 `RFQ_MODEL_CLASSIFY / RFQ_MODEL_EXTRACT / RFQ_MODEL_VISION`.
 
@@ -65,14 +69,14 @@ measurement that mattered it was not better — see `DECISIONS.md`.
 Dev inbox, 24 emails, from an empty cache:
 
 ```
-58 model calls · 96,424 prompt tokens · 19,891 completion tokens · $0.2882
-$0.0120 per email
+58 model calls · 99,478 prompt tokens · 19,980 completion tokens · $0.2948
+$0.0123 per email
 ```
 
 Spread is wide and deliberate. The four emails that carry no items — a vendor quote, a status
 inquiry, a bounce, a newsletter — cost **$0.0007 each**, because classification runs first and
 stops there. The expensive ones are the big documents: `$0.0380` for the 32-line two-page phone
-scan, `$0.0332` for the 44-line PDF, `$0.0317` for the 50-line two-tab workbook.
+scan, `$0.0336` for the 44-line PDF, `$0.0330` for the 50-line two-tab workbook.
 
 A second run on the same inbox costs **$0.0000** and makes **0** model calls.
 
@@ -84,7 +88,7 @@ printed with the report; override with `RFQ_PRICE_<MODEL>_IN` / `_OUT` if they d
 
 ```bash
 # 1 + 2 — replayable with no key, and free the second time
-rfq parse --emails data/dev/emails --out a.json      # cold: 58 calls, $0.2882
+rfq parse --emails data/dev/emails --out a.json      # cold: 58 calls, $0.2948
 rfq parse --emails data/dev/emails --out b.json      # 0 calls, $0.0000
 mv .env .env.off && rfq parse --emails data/dev/emails --out c.json && mv .env.off .env
 shasum -a 256 a.json b.json c.json                   # all three identical
