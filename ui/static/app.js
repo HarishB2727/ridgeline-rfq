@@ -287,9 +287,7 @@ function emailRow(s, id, rel, members) {
     : (q.attachments || []).length ? "not read yet" : "nothing attached — the body is the whole request";
   row.append(cellBox("docs", id, stepCls(st.documents),
     names.length
-      ? names.slice(0, 3).map(d => pill(d.source,
-          d.kind === "unreadable" ? "warn" : "mono", d.source))
-        .concat(names.length > 3 ? [pill(`+${names.length - 3}`, "")] : [])
+      ? names.map(d => pill(d.source, d.kind === "unreadable" ? "warn" : "mono", d.source))
       : pill("no attachments", "ghost"),
     extracted, names.length > 0));
 
