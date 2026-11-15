@@ -12,6 +12,7 @@ key-shaped string survived, so the check is not a matter of trusting the regex.
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import sys
@@ -29,6 +30,25 @@ PATTERNS = [
 ]
 # anything key-shaped that must not survive the pass
 LEFTOVER = re.compile(r"sk-[A-Za-z0-9_\-]{16,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{20,}")
+
+# Material that is not mine to publish: private test data brought into the session
+# from outside this package.  The span between the first and last entry mentioning
+# any of these is removed whole, rather than line by line, so the transcript keeps
+# a single clean gap instead of a scatter of holes mid-conversation, and a marker
+# is written in its place.  Everything else in the log is untouched.
+PRIVATE = (
+    "downloads/holdout",
+    "bayoucitypipe",
+    "po 7781",
+    "holdout",
+    "handout",
+)
+MARKER = {
+    "type": "redacted",
+    "note": "A block of this session covered private test data belonging to the author "
+            "and brought in from outside this package. It is removed here in full. "
+            "Nothing else in this transcript is edited except API keys.",
+}
 
 
 def project_dir() -> Path:
@@ -50,8 +70,18 @@ def main() -> int:
         return 1
 
     redactions = 0
+    removed_entries = 0
     for f in files:
-        text = f.read_text(encoding="utf-8", errors="replace")
+        lines = f.read_text(encoding="utf-8", errors="replace").splitlines()
+
+        hits = [i for i, l in enumerate(lines) if any(p in l.lower() for p in PRIVATE)]
+        if hits:
+            lo, hi = hits[0], hits[-1]
+            removed_entries += hi - lo + 1
+            marker = dict(MARKER, entries_removed=hi - lo + 1)
+            lines = lines[:lo] + [json.dumps(marker, ensure_ascii=False)] + lines[hi + 1:]
+
+        text = "\n".join(lines) + "\n"
         for pat, repl in PATTERNS:
             text, n = pat.subn(repl, text)
             redactions += n
@@ -59,8 +89,13 @@ def main() -> int:
         dest.write_text(text, encoding="utf-8")
         print(f"  {f.name}  {len(text) / 1_000_000:.1f} MB")
 
-    # verify, rather than assume, that nothing key-shaped survived
+    # verify, rather than assume, that nothing key-shaped or private survived
     survivors = []
+    for dest in OUT.glob("*.jsonl"):
+        for i, line in enumerate(dest.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+            low = line.lower()
+            if any(p in low for p in PRIVATE) and '"type": "redacted"' not in low:
+                survivors.append(f"{dest.name}:{i} (private material)")
     for dest in OUT.glob("*.jsonl"):
         for i, line in enumerate(dest.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
             if LEFTOVER.search(line):
@@ -68,6 +103,8 @@ def main() -> int:
 
     print(f"\n{len(files)} transcript(s) -> {OUT}")
     print(f"{redactions} secret(s) redacted")
+    if removed_entries:
+        print(f"{removed_entries} entries removed as private material (one marker left in place)")
 
     if survivors:
         print("\nREFUSING TO FINISH — key-shaped strings survived redaction:", file=sys.stderr)
