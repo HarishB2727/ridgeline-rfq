@@ -18,10 +18,19 @@
   </div>
   <div class="spacer"></div>
   <div id="meter" class="meter"></div>
+  <label class="switch" id="live-wrap" title="Ignore every recorded answer and call the model for real. The committed cache is left untouched.">
+    <input type="checkbox" id="live">
+    <span class="track"><span class="knob"></span></span>
+    <span class="slabel">live calls</span>
+  </label>
   <label class="btn ghost">add .eml<input type="file" id="picker" multiple accept=".eml,message/rfc822" hidden></label>
   <button class="btn primary" id="process" disabled>Process</button>
   <button class="btn ghost" id="reset" hidden>Clear</button>
 </header>
+
+<div id="livebar" class="livebar hidden">
+  <span class="chip warn">live</span><span id="live-note"></span>
+</div>
 
 <!-- the architecture, once, at the top -->
 <section id="arch" class="arch">

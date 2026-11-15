@@ -43,7 +43,7 @@ function process() {
   if (!JOB) return;
   DETAIL = {};
   $("#process").disabled = true;
-  send("/api/process", { job: JOB }).then(() => poll());
+  send("/api/process", { job: JOB, live: $("#live").checked }).then(() => poll());
 }
 
 function poll() {
@@ -64,8 +64,16 @@ function apply(s) {
   $("#dropzone").classList.toggle("hidden", !!s.order.length);
   $("#reset").hidden = !s.order.length;
   $("#process").disabled = s.state === "running" || !s.order.length;
+  const live = $("#live").checked;
   $("#process").textContent = s.state === "running" ? "Processing…"
-    : s.state === "done" ? "Process again" : `Process ${s.order.length}`;
+    : s.state === "done" ? (live ? "Run live again" : "Process again")
+    : live ? `Run ${s.order.length} live` : `Process ${s.order.length}`;
+  $("#process").classList.toggle("warnbtn", live);
+  $("#livebar").classList.toggle("hidden", !live || !s.order.length);
+  const est = (s.cost?.cold_run?.cost_usd) || (s.order.length * 0.012);
+  $("#live-note").textContent = s.order.length
+    ? `every recorded answer is ignored — ${s.order.length} email${s.order.length > 1 ? "s" : ""} will be sent to OpenAI for real, roughly $${est.toFixed(2)}. The committed cache is left untouched.`
+    : "";
   renderPipebar();
   renderMeter(s);
   renderGrid(s);
@@ -663,6 +671,7 @@ function decide(email, item, action, btn, now) {
 
 $("#picker").addEventListener("change", ev => { addFiles(ev.target.files); ev.target.value = ""; });
 $("#process").addEventListener("click", process);
+$("#live").addEventListener("change", () => { if (SNAP) apply(SNAP); });
 $("#reset").addEventListener("click", () => send("/api/reset", { job: JOB }).then(() => {
   JOB = null; SNAP = null; OPEN = null; PANEL = null; DETAIL = {};
   $("#grid").innerHTML = ""; $("#meter").innerHTML = "";

@@ -67,6 +67,7 @@ class Job:
         self.id = job_id
         self.inbox = inbox
         self.state = "staged"
+        self.live = False
         self.started: float | None = None
         self.elapsed = 0.0
         self.error: str | None = None
@@ -93,6 +94,7 @@ class Job:
             return {
                 "job": self.id,
                 "state": self.state,
+                "live": self.live,
                 "error": self.error,
                 "elapsed": round((time.time() - self.started) if self.started else 0.0, 1),
                 "order": self.order,
@@ -158,18 +160,39 @@ def stage(job_id: str, inbox: Path) -> list[dict]:
     return queue
 
 
-def process(job: Job) -> None:
+def process(job: Job, live: bool = False) -> None:
+    """live=True ignores every recorded answer and calls the model for real.
+
+    It also stops writing to the cache. The committed answers are what makes the
+    keyless replay reproduce the graded run, so a testing toggle must not be able
+    to quietly rewrite them underneath that.
+    """
+    job.live = live
     threading.Thread(target=_run, args=(job,), daemon=True).start()
 
 
 def _run(job: Job) -> None:
     job.state = "running"
     job.started = time.time()
+    with job.lock:
+        # a re-run starts clean, or a live run shows last run's cached calls
+        # alongside this run's real ones and neither number means anything
+        for row in job.emails.values():
+            row["calls"] = []
+            row["steps"] = {name: "pending" for name, _, _ in STEPS}
+            row["state"] = "pending"
+            row["error"] = None
     try:
         _load_dotenv()
         import os
 
-        runner = ModelRunner(default_cache(), api_key=os.getenv("OPENAI_API_KEY"))
+        live = getattr(job, "live", False)
+        runner = ModelRunner(
+            default_cache(),
+            api_key=os.getenv("OPENAI_API_KEY"),
+            refresh=live,
+            write_cache=not live,
+        )
         models = {
             "classify": DEFAULT_CLASSIFY_MODEL,
             "extract": DEFAULT_EXTRACT_MODEL,

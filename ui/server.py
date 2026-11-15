@@ -268,7 +268,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"error": "no such job"}, 404)
             if job.state == "running":
                 return self._json({"error": "already running"}, 409)
-            engine.process(job)
+            engine.process(job, live=bool(payload.get("live")))
             return self._json({"ok": True})
 
         if u.path == "/api/reset":
