@@ -376,3 +376,11 @@ a.mini.dl{text-decoration:none;display:inline-block}
 .vhead.ok{color:var(--ok)} .vhead.warnt{color:var(--warn)}
 .vlist{margin:6px 0 0;padding-left:18px;font-size:11.5px;color:var(--faint)}
 .vlist li{margin-bottom:3px}
+
+/* QTY sat right-aligned across a wide column, so the number drifted away from
+   its own header and crowded UOM. Narrow both columns and right-align the
+   header with them: the figure now reads directly under the word QTY. */
+table th:first-child{text-align:right;width:62px;padding-right:16px}
+table td.num{width:62px;padding-right:16px}
+table th:nth-child(2){width:56px}
+table td.uom{width:56px}
