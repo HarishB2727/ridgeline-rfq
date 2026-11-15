@@ -134,13 +134,24 @@ def read_xlsx(data: bytes, source: str) -> Document:
     wb = load_workbook(io.BytesIO(data), data_only=True)
     out: list[str] = []
     skipped: list[str] = []
-    for ws in wb.worksheets:
+    visible = [w for w in wb.worksheets if w.sheet_state == "visible"]
+    for n, ws in enumerate(wb.worksheets, start=0):
         # A hidden sheet is the author telling you it is not the live version
         # (E005 hides "Rev A (old)" behind the Rev B everyone is meant to read).
         if ws.sheet_state != "visible":
             skipped.append(ws.title)
             continue
-        out.append(f"=== SHEET: {ws.title} ===")
+        # The tab name is routinely the only place a spec is written — a workbook
+        # with tabs "SS PIPE SCH 10S" and "SS FITTINGS BW 10S" states the schedule
+        # and the end type nowhere else.  A bare "=== SHEET: x ===" was read as a
+        # divider and the rows came back without it, inconsistently; saying what
+        # the name IS makes it part of the row rather than scenery.
+        pos = visible.index(ws) + 1
+        out.append(
+            f'=== SHEET {pos} of {len(visible)} — tab name: "{ws.title}" ===\n'
+            f'(this tab is named "{ws.title}"; whatever specification that name states '
+            f"applies to every row on this sheet and belongs in each line's description)"
+        )
         for row in ws.iter_rows(values_only=True):
             line = _row([_cell(c) for c in row])
             if line.strip():

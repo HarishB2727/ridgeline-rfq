@@ -1,16 +1,16 @@
 {
   "emails": 24,
-  "model_calls": 0,
-  "cache_hits": 58,
-  "prompt_tokens": 0,
-  "completion_tokens": 0,
-  "cost_usd": 0.0,
-  "cost_per_email_usd": 0.0,
+  "model_calls": 58,
+  "cache_hits": 0,
+  "prompt_tokens": 99478,
+  "completion_tokens": 19980,
+  "cost_usd": 0.2948,
+  "cost_per_email_usd": 0.01228,
   "cold_run": {
-    "prompt_tokens": 96424,
-    "completion_tokens": 19891,
-    "cost_usd": 0.2882,
-    "cost_per_email_usd": 0.01201
+    "prompt_tokens": 99478,
+    "completion_tokens": 19980,
+    "cost_usd": 0.2948,
+    "cost_per_email_usd": 0.01228
   },
   "pricing_table_usd_per_1m": {
     "gpt-4o": [
@@ -47,288 +47,288 @@
     ]
   },
   "per_email": {
-    "E003": {
-      "calls": 0,
-      "cache_hits": 2,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.007913,
+    "E006": {
+      "calls": 3,
+      "cache_hits": 0,
+      "prompt_tokens": 5656,
+      "completion_tokens": 3148,
+      "cost_usd": 0.033648,
+      "cold_cost_usd": 0.033648,
+      "models": {
+        "gpt-4.1-mini": 1,
+        "gpt-4.1": 2
+      }
+    },
+    "E002": {
+      "calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 2788,
+      "completion_tokens": 382,
+      "cost_usd": 0.006178,
+      "cold_cost_usd": 0.006178,
       "models": {
         "gpt-4.1-mini": 1,
         "gpt-4.1": 1
       }
     },
     "E001": {
-      "calls": 0,
-      "cache_hits": 2,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.006768,
+      "calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 3334,
+      "completion_tokens": 384,
+      "cost_usd": 0.00701,
+      "cold_cost_usd": 0.00701,
       "models": {
         "gpt-4.1-mini": 1,
         "gpt-4.1": 1
       }
     },
-    "E002": {
-      "calls": 0,
-      "cache_hits": 2,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.005932,
+    "E005": {
+      "calls": 3,
+      "cache_hits": 0,
+      "prompt_tokens": 4608,
+      "completion_tokens": 810,
+      "cost_usd": 0.013003,
+      "cold_cost_usd": 0.013003,
+      "models": {
+        "gpt-4.1-mini": 1,
+        "gpt-4.1": 2
+      }
+    },
+    "E003": {
+      "calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 3089,
+      "completion_tokens": 626,
+      "cost_usd": 0.008607,
+      "cold_cost_usd": 0.008607,
       "models": {
         "gpt-4.1-mini": 1,
         "gpt-4.1": 1
       }
     },
     "E004": {
-      "calls": 0,
-      "cache_hits": 2,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.00694,
+      "calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 2729,
+      "completion_tokens": 541,
+      "cost_usd": 0.00686,
+      "cold_cost_usd": 0.00686,
       "models": {
         "gpt-4.1-mini": 1,
         "gpt-4.1": 1
       }
     },
-    "E006": {
-      "calls": 0,
-      "cache_hits": 3,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.03322,
+    "E007": {
+      "calls": 3,
+      "cache_hits": 0,
+      "prompt_tokens": 5267,
+      "completion_tokens": 499,
+      "cost_usd": 0.012139,
+      "cold_cost_usd": 0.012139,
       "models": {
         "gpt-4.1-mini": 1,
         "gpt-4.1": 2
       }
     },
     "E008": {
-      "calls": 0,
-      "cache_hits": 3,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.034374,
+      "calls": 3,
+      "cache_hits": 0,
+      "prompt_tokens": 5697,
+      "completion_tokens": 3131,
+      "cost_usd": 0.033589,
+      "cold_cost_usd": 0.033589,
       "models": {
         "gpt-4.1-mini": 1,
         "gpt-4.1": 2
       }
     },
     "E009": {
-      "calls": 0,
-      "cache_hits": 4,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.03798,
+      "calls": 4,
+      "cache_hits": 0,
+      "prompt_tokens": 11226,
+      "completion_tokens": 2372,
+      "cost_usd": 0.039055,
+      "cold_cost_usd": 0.039055,
+      "models": {
+        "gpt-4.1-mini": 1,
+        "gpt-4.1": 3
+      }
+    },
+    "E010": {
+      "calls": 4,
+      "cache_hits": 0,
+      "prompt_tokens": 7076,
+      "completion_tokens": 533,
+      "cost_usd": 0.015962,
+      "cold_cost_usd": 0.015962,
       "models": {
         "gpt-4.1-mini": 1,
         "gpt-4.1": 3
       }
     },
     "E011": {
-      "calls": 0,
-      "cache_hits": 1,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.000735,
+      "calls": 1,
+      "cache_hits": 0,
+      "prompt_tokens": 1506,
+      "completion_tokens": 78,
+      "cost_usd": 0.000727,
+      "cold_cost_usd": 0.000727,
       "models": {
         "gpt-4.1-mini": 1
       }
     },
     "E012": {
-      "calls": 0,
-      "cache_hits": 1,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.000697,
-      "models": {
-        "gpt-4.1-mini": 1
-      }
-    },
-    "E014": {
-      "calls": 0,
-      "cache_hits": 1,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.000675,
+      "calls": 1,
+      "cache_hits": 0,
+      "prompt_tokens": 1410,
+      "completion_tokens": 79,
+      "cost_usd": 0.00069,
+      "cold_cost_usd": 0.00069,
       "models": {
         "gpt-4.1-mini": 1
       }
     },
     "E013": {
-      "calls": 0,
-      "cache_hits": 1,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.00071,
+      "calls": 1,
+      "cache_hits": 0,
+      "prompt_tokens": 1424,
+      "completion_tokens": 78,
+      "cost_usd": 0.000694,
+      "cold_cost_usd": 0.000694,
+      "models": {
+        "gpt-4.1-mini": 1
+      }
+    },
+    "E014": {
+      "calls": 1,
+      "cache_hits": 0,
+      "prompt_tokens": 1383,
+      "completion_tokens": 79,
+      "cost_usd": 0.00068,
+      "cold_cost_usd": 0.00068,
       "models": {
         "gpt-4.1-mini": 1
       }
     },
     "E015": {
-      "calls": 0,
-      "cache_hits": 3,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.01241,
+      "calls": 3,
+      "cache_hits": 0,
+      "prompt_tokens": 4952,
+      "completion_tokens": 696,
+      "cost_usd": 0.012661,
+      "cold_cost_usd": 0.012661,
       "models": {
         "gpt-4.1-mini": 1,
         "gpt-4.1": 2
       }
     },
     "E016": {
-      "calls": 0,
-      "cache_hits": 3,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.010946,
-      "models": {
-        "gpt-4.1-mini": 1,
-        "gpt-4.1": 2
-      }
-    },
-    "E010": {
-      "calls": 0,
-      "cache_hits": 4,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.016047,
-      "models": {
-        "gpt-4.1-mini": 1,
-        "gpt-4.1": 3
-      }
-    },
-    "E007": {
-      "calls": 0,
-      "cache_hits": 3,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.011357,
+      "calls": 3,
+      "cache_hits": 0,
+      "prompt_tokens": 4784,
+      "completion_tokens": 585,
+      "cost_usd": 0.011341,
+      "cold_cost_usd": 0.011341,
       "models": {
         "gpt-4.1-mini": 1,
         "gpt-4.1": 2
       }
     },
     "E017": {
-      "calls": 0,
-      "cache_hits": 3,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.008248,
+      "calls": 3,
+      "cache_hits": 0,
+      "prompt_tokens": 4886,
+      "completion_tokens": 159,
+      "cost_usd": 0.008654,
+      "cold_cost_usd": 0.008654,
       "models": {
         "gpt-4.1-mini": 1,
         "gpt-4.1": 2
       }
     },
     "E018": {
-      "calls": 0,
-      "cache_hits": 2,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.008051,
-      "models": {
-        "gpt-4.1-mini": 1,
-        "gpt-4.1": 1
-      }
-    },
-    "E020": {
-      "calls": 0,
-      "cache_hits": 2,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.006968,
-      "models": {
-        "gpt-4.1-mini": 1,
-        "gpt-4.1": 1
-      }
-    },
-    "E022": {
-      "calls": 0,
-      "cache_hits": 2,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.004017,
-      "models": {
-        "gpt-4.1-mini": 1,
-        "gpt-4.1": 1
-      }
-    },
-    "E023": {
-      "calls": 0,
-      "cache_hits": 3,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.010358,
-      "models": {
-        "gpt-4.1-mini": 1,
-        "gpt-4.1": 2
-      }
-    },
-    "E024": {
-      "calls": 0,
-      "cache_hits": 2,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.007383,
+      "calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 3147,
+      "completion_tokens": 648,
+      "cost_usd": 0.008841,
+      "cold_cost_usd": 0.008841,
       "models": {
         "gpt-4.1-mini": 1,
         "gpt-4.1": 1
       }
     },
     "E019": {
-      "calls": 0,
-      "cache_hits": 3,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.011572,
+      "calls": 3,
+      "cache_hits": 0,
+      "prompt_tokens": 4489,
+      "completion_tokens": 711,
+      "cost_usd": 0.012076,
+      "cold_cost_usd": 0.012076,
       "models": {
         "gpt-4.1-mini": 1,
         "gpt-4.1": 2
       }
     },
-    "E005": {
-      "calls": 0,
-      "cache_hits": 3,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.013168,
+    "E020": {
+      "calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 3442,
+      "completion_tokens": 379,
+      "cost_usd": 0.006919,
+      "cold_cost_usd": 0.006919,
       "models": {
         "gpt-4.1-mini": 1,
-        "gpt-4.1": 2
+        "gpt-4.1": 1
       }
     },
     "E021": {
-      "calls": 0,
-      "cache_hits": 3,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.03171,
+      "calls": 3,
+      "cache_hits": 0,
+      "prompt_tokens": 5460,
+      "completion_tokens": 3115,
+      "cost_usd": 0.033034,
+      "cold_cost_usd": 0.033034,
       "models": {
         "gpt-4.1-mini": 1,
         "gpt-4.1": 2
+      }
+    },
+    "E022": {
+      "calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 2794,
+      "completion_tokens": 126,
+      "cost_usd": 0.004134,
+      "cold_cost_usd": 0.004134,
+      "models": {
+        "gpt-4.1-mini": 1,
+        "gpt-4.1": 1
+      }
+    },
+    "E023": {
+      "calls": 3,
+      "cache_hits": 0,
+      "prompt_tokens": 5383,
+      "completion_tokens": 294,
+      "cost_usd": 0.010696,
+      "cold_cost_usd": 0.010696,
+      "models": {
+        "gpt-4.1-mini": 1,
+        "gpt-4.1": 2
+      }
+    },
+    "E024": {
+      "calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 2948,
+      "completion_tokens": 527,
+      "cost_usd": 0.007594,
+      "cold_cost_usd": 0.007594,
+      "models": {
+        "gpt-4.1-mini": 1,
+        "gpt-4.1": 1
       }
     }
   },

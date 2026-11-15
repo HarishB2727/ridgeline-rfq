@@ -26,6 +26,23 @@ from pathlib import Path
 
 PROMPT_VERSION = "v1"
 
+# Pinned and part of the cache key, so changing it invalidates recorded answers
+# rather than silently mixing two settings.
+#
+# Not zero, which is the opposite of what I assumed.  Extraction looks like a task
+# that wants greedy decoding, and turning temperature down does make it steadier —
+# but it also makes it *transcriptive*.  Measured on a two-tab workbook whose spec
+# lives in the sheet names ("SS FITTINGS BW 10S"), context carried onto the rows:
+#
+#     temperature 0.0   0 of 54 lines   (twice)
+#     temperature 0.2   0 of 54 lines   (twice)
+#     temperature 1.0  54 of 54 lines   (twice)
+#
+# At 0 it copies the row and leaves the heading behind. The job here is not to
+# transcribe a row, it is to rewrite it self-contained, and that needs the model
+# to compose rather than copy.
+TEMPERATURE = float(os.getenv("RFQ_TEMPERATURE", "1"))
+
 # USD per 1M tokens.  Override with RFQ_PRICE_<MODEL>_IN / _OUT if these drift;
 # the run always reports which table it used.
 PRICING: dict[str, tuple[float, float]] = {
@@ -157,7 +174,9 @@ class ModelRunner:
         prompt_version: str = PROMPT_VERSION,
         max_retries: int = 4,
         write_cache: bool = True,
+        temperature: float = TEMPERATURE,
     ) -> None:
+        self.temperature = temperature
         self.cache_dir = Path(cache_dir)
         self.prompt_version = prompt_version
         self.refresh = refresh
@@ -168,6 +187,7 @@ class ModelRunner:
         self._client = None
         self._client_lock = threading.Lock()
         self._io_lock = threading.Lock()
+        self._no_temperature = False
 
     @property
     def offline(self) -> bool:
@@ -190,6 +210,7 @@ class ModelRunner:
         fp = {
             "prompt_version": self.prompt_version,
             "model": model,
+            "temperature": self.temperature,
             "schema": schema_name,
             "system": system,
             "parts": [
@@ -275,7 +296,7 @@ class ModelRunner:
         last: Exception | None = None
         for attempt in range(self.max_retries):
             try:
-                resp = self._client_or_die().chat.completions.create(
+                kwargs = dict(
                     model=model,
                     messages=[
                         {"role": "system", "content": system},
@@ -287,6 +308,18 @@ class ModelRunner:
                     },
                     max_completion_tokens=max_tokens,
                 )
+                if not self._no_temperature:
+                    kwargs["temperature"] = self.temperature
+                try:
+                    resp = self._client_or_die().chat.completions.create(**kwargs)
+                except Exception as exc:
+                    # some models accept only the default; drop it and carry on
+                    if "temperature" in str(exc).lower() and not self._no_temperature:
+                        self._no_temperature = True
+                        kwargs.pop("temperature", None)
+                        resp = self._client_or_die().chat.completions.create(**kwargs)
+                    else:
+                        raise
                 break
             except Exception as exc:  # transient: rate limit, 5xx, connection reset
                 last = exc

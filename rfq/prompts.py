@@ -101,6 +101,10 @@ QTY and UOM
 qty is the number the customer stated. Do not convert it and do not infer it.
 A size, schedule, pressure class, length, part number, line number or price is NEVER a quantity.
 A vague amount ("a couple", "a few", "enough for the job") is null — do not guess a number.
+A number that counts something OTHER than the item is not the quantity: "unions, enough for 3
+risers" does not order three unions, "pipe to cover 2 drops" does not order two. If the only
+number present counts risers, drops, joints, spools, bays or anything that is not the item
+itself, the quantity is null.
 A number spelled out in words is a number.
 uom is exactly one of EA FT M IN BX PK PR DZ RL LB SET GAL BAG CS, or null when the customer
 stated no unit. jts / joints / lengths / pieces / pcs / ea are EA. rolls is RL. sets is SET.
@@ -155,11 +159,12 @@ FIRST decide what the picture is.
     SHOWS, never by how large the file is.
   - A nameplate, data tag or product label is the SPECIFICATION of the item being asked about.
     Return ONE line for it. Its quantity usually comes from the email body ("quote 3 of these").
-    For `raw`, give ONE line from the plate and nothing else: the one that identifies the part,
-    normally the model or part number, copied exactly as printed — for example "MODEL: ABC-123".
-    Do not join the plate's fields together and do not list them in `raw`. Every other field
-    (size, class, ends, body, trim, material) belongs in `description`, which is where the
-    specification goes.
+    For `raw`, give the plate's identifying line(s), copied exactly as printed: the model,
+    figure or part number, AND the line that says what the item is, if the plate carries both —
+    joined with " | ", for example "MODEL: ABC-123 | 2\" BALL VALVE FP". Those are the two
+    things a rep would quote the plate by, and which of them a given plate leads with varies.
+    Do not list the plate's other fields in `raw`. Everything else on it (size, class, ends,
+    body, trim, material) belongs in `description`, which is where the specification goes.
   - Otherwise read the list.
 
 {_LINE_RULES}
