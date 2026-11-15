@@ -111,101 +111,204 @@ function cellBox(key, id, stateCls, kids, openable = true) {
 }
 const val = (big, rest) => { const v = el("div", "v"); v.append(el("span", "big", big)); if (rest) v.append(rest); return v; };
 
+/* ───────────── grouping: a party, their requests, the thread under each ─────────── */
+
+function normSubject(x) {
+  let t = (x || "").trim();
+  for (;;) {
+    const y = t.replace(/^\s*(re|fw|fwd|resend|resending|reminder)\s*:\s*/i, "");
+    if (y === t) break;
+    t = y;
+  }
+  return t.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function buildGroups(s) {
+  const byId = Object.fromEntries(s.queue.map(q => [q.id, q]));
+  const sum = id => (s.emails[id] || {}).summary || {};
+  const when = id => Date.parse(byId[id]?.date || "") || 0;
+
+  const parent = {};
+  for (const q of s.queue) parent[q.id] = q.id;
+  const find = i => parent[i] === i ? i : (parent[i] = find(parent[i]));
+  const union = (a, b) => {
+    if (!byId[a] || !byId[b]) return;
+    const ra = find(a), rb = find(b);
+    if (ra !== rb) parent[when(rb) < when(ra) ? ra : rb] = when(rb) < when(ra) ? rb : ra;
+  };
+
+  /* once an email has been read, the pipeline's own links are the truth */
+  for (const q of s.queue) {
+    const m = sum(q.id);
+    if (m.revises) union(m.revises, q.id);
+    if (m.duplicate_of) union(m.duplicate_of, q.id);
+  }
+  /* before it has, the subject is the only hint there is.  Deliberately not
+     applied afterwards: two different orders can share one generic subject,
+     and the duplicate rule has already decided they are not the same request. */
+  const seen = new Map();
+  for (const q of s.queue) {
+    if (sum(q.id).classification) continue;
+    const k = `${q.customer_domain || q.domain}|${normSubject(q.subject)}`;
+    if (seen.has(k)) union(seen.get(k), q.id); else seen.set(k, q.id);
+  }
+
+  const threads = new Map();
+  for (const q of s.queue) {
+    const r = find(q.id);
+    if (!threads.has(r)) threads.set(r, []);
+    threads.get(r).push(q.id);
+  }
+  for (const arr of threads.values()) arr.sort((x, y) => when(x) - when(y) || x.localeCompare(y));
+
+  const parties = new Map();
+  for (const members of threads.values()) {
+    const q = byId[members[0]];
+    const dom = q.customer_domain || q.domain || "?";
+    if (!parties.has(dom)) parties.set(dom, { domain: dom, org: q.org, people: [], threads: [] });
+    const p = parties.get(dom);
+    for (const m of members) if (!p.people.includes(byId[m].person)) p.people.push(byId[m].person);
+    p.threads.push(members);
+  }
+  for (const p of parties.values()) p.threads.sort((x, y) => when(x[0]) - when(y[0]));
+  return [...parties.values()].sort((x, y) => when(x.threads[0][0]) - when(y.threads[0][0]));
+}
+
+function relationOf(s, id) {
+  const m = (s.emails[id] || {}).summary || {};
+  if (m.duplicate_of) return { label: "duplicate", cls: "chip" };
+  if (m.revises) return { label: "revision", cls: "chip ok" };
+  return { label: "follow-up", cls: "chip" };
+}
+
 function renderGrid(s) {
   const g = $("#grid");
   g.innerHTML = "";
-  for (const q of s.queue) {
-    const e = s.emails[q.id] || {};
-    const sum = e.summary || {};
-    const st = e.steps || {};
-    const row = el("div", `erow ${OPEN === q.id ? "open" : ""}`);
-    const busy = e.state === "running" || e.state === "linking";
-
-    /* 1 — who */
-    const who = el("div", "cell who");
-    const wm = el("div", "lead-main");
-    wm.append(el("div", "person", q.person || "—"));
-    wm.append(el("div", "org", q.org || q.domain || ""));
-    wm.append(el("div", "eid", q.id));
-    who.append(wm);
-    if (busy) who.append(el("span", "dotpulse"));
-    if (q.from_us) who.append(el("span", "chip", "our rep"));
-    row.append(who);
-
-    /* 2 — the email as is */
-    row.append(cellBox("email", q.id, "", [
-      val(`${q.body_chars ?? 0}`, el("span", "muted", "chars")),
-      el("div", "sub", q.subject),
-    ]));
-
-    /* 3 — what code made of it (step 1) */
-    row.append(cellBox("code", q.id, st.ingest || "pending", [
-      val(`${q.body_chars ?? 0}`, el("span", "muted", "current")),
-      q.quoted_chars
-        ? el("div", "sub warnish", `+${q.quoted_chars} thread — excluded`)
-        : el("div", "sub", "no thread below"),
-    ]));
-
-    /* 4 — attachments (step 2) */
-    const docs = sum.documents || [];
-    const att = docs.filter(d => d.source !== "body");
-    const kinds = {};
-    for (const d of att) kinds[d.kind] = (kinds[d.kind] || 0) + 1;
-    const nAtt = att.length || (q.attachments || []).length;
-    const bad = att.some(d => d.kind === "unreadable");
-    row.append(cellBox("docs", q.id, (bad ? "warnc " : "") + (st.documents || "pending"), [
-      val(`${nAtt}`, el("span", "muted", nAtt === 1 ? "file" : "files")),
-      el("div", "sub", att.length ? Object.entries(kinds).map(([k, v]) => `${v} ${k}`).join(", ")
-        : (q.attachments || []).join(", ") || "none"),
-      bad ? el("span", "chip warn", "unreadable") : null,
-    ], nAtt > 0));
-
-    /* 5 — classification (step 3) */
-    const cc = (e.calls || []).filter(c => (c.label || "").startsWith("Decide"));
-    const isItem = ["rfq", "rfq_revision", "purchase_order"].includes(sum.classification);
-    row.append(cellBox("classify", q.id, st.classify || "pending", [
-      sum.classification ? el("span", `chip ${isItem ? "ok" : ""}`, sum.classification)
-        : el("div", "v muted", "—"),
-      el("div", "sub", cc.length ? `${cc.length} model call${cc.length > 1 ? "s" : ""}` : "not run"),
-    ], cc.length > 0));
-
-    /* 6 — model reads documents (step 4) */
-    const xc = (e.calls || []).length - cc.length;
-    const skipped = st.extract === "skipped";
-    row.append(cellBox("extract", q.id, st.extract || "pending", [
-      skipped ? el("span", "chip", "skipped") : val(`${xc}`, el("span", "muted", xc === 1 ? "call" : "calls")),
-      el("div", "sub", skipped ? "no items to read — the gate" : `${sum.n_items ?? 0} lines returned`),
-    ], xc > 0));
-
-    /* 7 — check every line (step 5) */
-    row.append(cellBox("verify", q.id, (sum.n_dropped ? "warnc " : "") + (st.verify || "pending"), [
-      val(`${sum.n_items ?? 0}`, el("span", "muted", "kept")),
-      el("div", "sub", sum.n_dropped ? `${sum.n_dropped} dropped` : "nothing dropped"),
-    ], e.state === "done"));
-
-    /* 8 — outcome (step 6) */
-    const flag = sum.needs_review ? "warnc" : e.error ? "badc" : (st.link || "pending");
-    row.append(cellBox("outcome", q.id, flag, [
-      sum.needs_review ? el("span", "chip warn", "needs review")
-        : sum.duplicate_of ? el("span", "chip", "duplicate")
-        : sum.revises ? el("span", "chip", "revision")
-        : st.link === "done" ? el("span", "chip ok", "ready to quote") : el("div", "v muted", "—"),
-      el("div", "sub", sum.duplicate_of ? `of ${sum.duplicate_of}`
-        : sum.revises ? `revises ${sum.revises}`
-        : sum.needs_review ? (sum.review_reason || "").slice(0, 48)
-        : `${sum.n_items ?? 0} lines`),
-    ], e.state === "done"));
-
-    g.append(row);
-
-    if (OPEN === q.id) {
-      const d = el("div", "detail");
-      d.id = "detail-" + q.id;
-      d.append(el("div", "note", "loading…"));
-      row.append(d);
-      if (DETAIL[q.id]) renderPanel(DETAIL[q.id], d);
+  for (const party of buildGroups(s)) {
+    g.append(groupHead(party, s));
+    for (const members of party.threads) {
+      members.forEach((id, i) => g.append(emailRow(s, id, i > 0 ? relationOf(s, id) : null, members)));
     }
   }
+}
+
+function groupHead(p, s) {
+  const h = el("div", "ghead");
+  const left = el("div", "gleft");
+  left.append(el("span", "gorg", p.org || p.domain));
+  left.append(el("span", "gdom", p.domain));
+  if (p.people.length) left.append(el("span", "gppl", p.people.join(", ")));
+  h.append(left);
+
+  const nMsg = p.threads.reduce((a, t) => a + t.length, 0);
+  const lines = p.threads.reduce((a, t) => {
+    const live = t.filter(i => !((s.emails[i] || {}).summary || {}).duplicate_of);
+    const last = live[live.length - 1];
+    return a + (((s.emails[last] || {}).summary || {}).n_items || 0);
+  }, 0);
+  const right = el("div", "gright");
+  right.append(el("span", "chip", `${p.threads.length} request${p.threads.length > 1 ? "s" : ""}`));
+  if (nMsg !== p.threads.length) right.append(el("span", "chip", `${nMsg} messages`));
+  if (lines) right.append(el("span", "chip ok", `${lines} lines to quote`));
+  if (p.threads.some(t => t.some(i => (((s.emails[i] || {}).summary) || {}).needs_review)))
+    right.append(el("span", "chip warn", "needs review"));
+  h.append(right);
+  return h;
+}
+
+function emailRow(s, id, rel, members) {
+  const q = s.queue.find(x => x.id === id);
+  const e = s.emails[id] || {};
+  const sum = e.summary || {};
+  const st = e.steps || {};
+  const row = el("div", `erow ${rel ? "child" : ""} ${OPEN === id ? "open" : ""}`);
+  const busy = e.state === "running" || e.state === "linking";
+
+  /* 1 — who / which message */
+  const who = el("div", "cell who");
+  if (rel) who.append(el("span", "tee", "↳"));
+  const wm = el("div", "lead-main");
+  if (rel) {
+    wm.append(el("div", "person", q.subject));
+    const sub = el("div", "org");
+    sub.append(el("span", rel.cls, rel.label));
+    wm.append(sub);
+  } else {
+    wm.append(el("div", "person", q.subject));
+    wm.append(el("div", "org", q.person || ""));
+  }
+  wm.append(el("div", "eid", id + (q.date ? " · " + new Date(q.date).toLocaleDateString(undefined,
+    { month: "short", day: "numeric" }) : "")));
+  who.append(wm);
+  if (busy) who.append(el("span", "dotpulse"));
+  if (q.from_us) who.append(el("span", "chip", "our rep"));
+  row.append(who);
+
+  row.append(cellBox("email", id, "", [
+    val(`${q.body_chars ?? 0}`, el("span", "muted", "chars")),
+    el("div", "sub", (q.sender || "").replace(/.*</, "").replace(/>/, "")),
+  ]));
+
+  row.append(cellBox("code", id, st.ingest || "pending", [
+    val(`${q.body_chars ?? 0}`, el("span", "muted", "current")),
+    q.quoted_chars ? el("div", "sub warnish", `+${q.quoted_chars} thread — excluded`)
+      : el("div", "sub", "no thread below"),
+  ]));
+
+  const docs = sum.documents || [];
+  const att = docs.filter(d => d.source !== "body");
+  const kinds = {};
+  for (const d of att) kinds[d.kind] = (kinds[d.kind] || 0) + 1;
+  const nAtt = att.length || (q.attachments || []).length;
+  const bad = att.some(d => d.kind === "unreadable");
+  row.append(cellBox("docs", id, (bad ? "warnc " : "") + (st.documents || "pending"), [
+    val(`${nAtt}`, el("span", "muted", nAtt === 1 ? "file" : "files")),
+    el("div", "sub", att.length ? Object.entries(kinds).map(([k, v]) => `${v} ${k}`).join(", ")
+      : (q.attachments || []).join(", ") || "none"),
+    bad ? el("span", "chip warn", "unreadable") : null,
+  ], nAtt > 0));
+
+  const cc = (e.calls || []).filter(c => (c.label || "").startsWith("Decide"));
+  const isItem = ["rfq", "rfq_revision", "purchase_order"].includes(sum.classification);
+  row.append(cellBox("classify", id, st.classify || "pending", [
+    sum.classification ? el("span", `chip ${isItem ? "ok" : ""}`, sum.classification) : el("div", "v muted", "—"),
+    el("div", "sub", cc.length ? `${cc.length} model call${cc.length > 1 ? "s" : ""}` : "not run"),
+  ], cc.length > 0));
+
+  const xc = (e.calls || []).length - cc.length;
+  const skipped = st.extract === "skipped";
+  row.append(cellBox("extract", id, st.extract || "pending", [
+    skipped ? el("span", "chip", "skipped") : val(`${xc}`, el("span", "muted", xc === 1 ? "call" : "calls")),
+    el("div", "sub", skipped ? "no items to read — the gate" : `${sum.n_items ?? 0} lines returned`),
+  ], xc > 0));
+
+  row.append(cellBox("verify", id, (sum.n_dropped ? "warnc " : "") + (st.verify || "pending"), [
+    val(`${sum.n_items ?? 0}`, el("span", "muted", "kept")),
+    el("div", "sub", sum.n_dropped ? `${sum.n_dropped} dropped` : "nothing dropped"),
+  ], e.state === "done"));
+
+  const isCurrent = members && !sum.duplicate_of &&
+    id === [...members].reverse().find(m => !(((s.emails[m] || {}).summary) || {}).duplicate_of
+      && (((s.emails[m] || {}).summary) || {}).n_items);
+  const flag = sum.needs_review ? "warnc" : e.error ? "badc" : (st.link || "pending");
+  row.append(cellBox("outcome", id, flag, [
+    sum.needs_review ? el("span", "chip warn", "needs review")
+      : sum.duplicate_of ? el("span", "chip", "duplicate")
+      : st.link === "done" ? el("span", "chip ok", isCurrent && members.length > 1 ? "current order" : "ready to quote")
+      : el("div", "v muted", "—"),
+    el("div", "sub", sum.duplicate_of ? `superseded by ${sum.duplicate_of}`
+      : sum.needs_review ? (sum.review_reason || "").slice(0, 48)
+      : `${sum.n_items ?? 0} lines`),
+  ], e.state === "done"));
+
+  if (OPEN === id) {
+    const d = el("div", "detail");
+    d.id = "detail-" + id;
+    d.append(el("div", "note", "loading…"));
+    row.append(d);
+    if (DETAIL[id]) renderPanel(DETAIL[id], d);
+  }
+  return row;
 }
 
 function openPanel(id, key) {

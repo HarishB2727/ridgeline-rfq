@@ -22,6 +22,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from rfq.cli import _load_dotenv, default_cache  # noqa: E402
+from ui.rollup import _customer_domain  # noqa: E402
 from rfq.ingest import ingest  # noqa: E402
 from rfq.link import ITEM_CLASSES, apply_needs_review, link_inbox  # noqa: E402
 from rfq.llm import ModelRunner  # noqa: E402
@@ -113,6 +114,20 @@ class Job:
             }
 
 
+def _org(domain: str) -> str:
+    """A readable name for a party, from its domain.
+
+    The domain, not the signature block: a signature is prose and parsing it
+    guesses, a domain is a fact. Our own addresses are labelled as ours so a
+    bounce from our mail server never reads like a customer.
+    """
+    if not domain:
+        return "unknown"
+    if domain.endswith("ridgeline-supply.example"):
+        return "Ridgeline (us)"
+    return (domain.split(".")[0] or domain).replace("-", " ").title()
+
+
 def stage(job_id: str, inbox: Path) -> list[dict]:
     """Read the headers only — no model, no cost — so the queue can be shown first."""
     queue = []
@@ -130,10 +145,12 @@ def stage(job_id: str, inbox: Path) -> list[dict]:
                 body_chars=len(e.body_current or ""),
                 quoted_chars=len(e.body_quoted or ""),
                 person=e.sender_name or e.sender_addr.split("@")[0],
-                # the organisation, from the domain rather than the signature block:
-                # a signature is prose and parsing it guesses, a domain is a fact
-                org=(e.sender_domain.split(".")[0] or e.sender_domain).replace("-", " ").title(),
                 domain=e.sender_domain,
+                # who the request is actually FOR: mail from one of our own
+                # addresses is a rep forwarding a customer in, so the party is
+                # the person in the forwarded headers, not the colleague.
+                customer_domain=_customer_domain(e),
+                org=_org(_customer_domain(e)),
             )
         except Exception as exc:
             row.update(sender="?", subject=f"(could not be parsed: {exc})", attachments=[])
