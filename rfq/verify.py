@@ -204,7 +204,11 @@ def verify_lines(
             qty, qty_note = None, None
         uom = normalise_uom(ln.get("uom"), raw)
 
-        key = (tuple(tokens(raw)), qty, source)
+        # The description is part of what makes a line distinct.  A valve schedule
+        # with GATE and CHECK sections can print the identical row "4 | 3/4" | A105,
+        # 13Cr trim, SW" in both; they are two different valves, and keying only on
+        # the raw text silently deletes the second one.
+        key = (tuple(tokens(raw)), qty, source, tuple(tokens(desc)))
         if key in seen:
             trace.append({"source": source, "raw": raw, "dropped": "duplicate of an earlier line"})
             continue

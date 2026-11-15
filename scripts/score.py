@@ -83,14 +83,25 @@ def sim(a: str, b: str) -> float:
 
 
 def pair_lines(pred: list[dict], gold: list[dict], floor: float = 0.45):
-    """Greedy best-first pairing on raw-token overlap."""
+    """Greedy best-first pairing on raw-token overlap.
+
+    Token overlap alone is ambiguous when two lines differ only by swapping two
+    numbers — '6 - 4" spiral wound' and '4 - 6" spiral wound' have the identical
+    token set, so the matcher can cross them and report two quantity errors where
+    there are none.  Sequence similarity breaks the tie, since order is exactly
+    what distinguishes them."""
+    import difflib
+
     cands = []
     for i, p in enumerate(pred):
         for j, g in enumerate(gold):
             s = sim(p.get("raw", ""), g.get("raw", ""))
             if s >= floor:
-                cands.append((s, i, j))
+                order = difflib.SequenceMatcher(
+                    None, _fold(p.get("raw", "")), _fold(g.get("raw", ""))).ratio()
+                cands.append((round(s, 6), round(order, 6), i, j))
     cands.sort(reverse=True)
+    cands = [(s, i, j) for s, _o, i, j in cands]
     used_p, used_g, pairs = set(), set(), []
     for s, i, j in cands:
         if i in used_p or j in used_g:

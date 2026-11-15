@@ -11,6 +11,8 @@ property of the system rather than a hope about a prompt.
 
 from __future__ import annotations
 
+import re
+
 from .ingest import normalised_body, normalised_subject
 from .verify import tokens
 
@@ -23,6 +25,23 @@ def _line_signature(lines: list[dict]) -> tuple:
 
 def _attachment_set(email) -> frozenset[str]:
     return frozenset(a.sha256 for a in email.attachments if a.size > 0)
+
+
+_SAYS_RESEND = re.compile(
+    r"\b(re-?send(ing|t)?|sending (this )?again|sent (this )?again|second request|2nd request|"
+    r"disregard if|in case (it|this|the first|you)|did you (get|receive)|duplicate of)\b", re.I)
+
+
+def _says_resend(result) -> bool:
+    """Does the message itself say it is the same request again?
+
+    The classifier is already asked this and answers `looks_like_resend`; the
+    regex is the code-side second opinion on the subject and the covering note.
+    """
+    if (result.cls or {}).get("looks_like_resend"):
+        return True
+    text = f"{result.email.subject}\n{result.email.body_current}"
+    return bool(_SAYS_RESEND.search(text))
 
 
 def find_duplicate(result, seen: list) -> object | None:
@@ -40,16 +59,26 @@ def find_duplicate(result, seen: list) -> object | None:
     body = normalised_body(result.email.body_current)
     sig = _line_signature(result.lines)
 
+    resend = _says_resend(result)
+
     for prior in seen:
         if prior.duplicate_of:
             continue
         if prior.email.sender_addr != result.email.sender_addr:
             continue
-        if normalised_subject(prior.email.subject) != subj:
+        if prior.classification != result.classification:
             continue
-        prior_atts = _attachment_set(prior.email)
-        if atts and prior_atts and atts == prior_atts:
+        same_subject = normalised_subject(prior.email.subject) == subj
+        same_files = bool(atts) and atts == _attachment_set(prior.email)
+
+        # Byte-identical files from the same sender, where the message calls itself
+        # a resend, is conclusive on its own.  Requiring the subject to match too
+        # loses "PO 7781 - resending" against "PO 7781", which is the commonest
+        # way a resend actually arrives.
+        if same_files and (same_subject or resend):
             return prior
+        if not same_subject:
+            continue
         if body and normalised_body(prior.email.body_current) == body:
             return prior
         if sig and _line_signature(prior.lines) == sig:

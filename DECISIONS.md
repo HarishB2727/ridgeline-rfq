@@ -90,48 +90,52 @@ quote. I kept the rule and gave it three declared exceptions, each detectable fr
 message alone: a message that selects numbered items from the history, one of our own reps
 forwarding a customer, and a revision restating an order. Everything else sees no history at all.
 
-## Predictions for the held-out inbox
+## Predictions for the held-out inbox — and a measured holdout
 
-Dev is saturated and I tuned against it, so I expect a real drop. My honest ranges for ~40
-emails:
+I wrote these predictions before testing on anything but dev:
 
-| | predicted |
-|---|---|
-| silent losses | **0–1** |
-| hallucinated lines | 0–4 |
-| lost / phantom requests | 0–2 |
-| classification | 88–95% |
-| line recall / precision | 93–98% / 96–99% |
-| qty | 94–98% |
-| context carried | 90–96% |
-| `needs_review` recall | 0.85–1.0 |
+| | predicted | measured on a 38-email holdout, blind |
+|---|---|---|
+| silent losses | 0–1 | **0** |
+| hallucinated lines | 0–4 | **7** |
+| lost / phantom requests | 0–2 | **0 / 0** |
+| classification | 88–95% | **97.4%** (37/38) |
+| line recall / precision | 93–98% / 96–99% | **99.2% / 97.3%** |
+| qty | 94–98% | **100%** |
+| context carried | 90–96% | **100%** |
+| `needs_review` P / R | – / 0.85–1.0 | **1.0 / 1.0** |
 
-**The two kinds I expect to get wrong.**
+That holdout is not the graders' inbox — it is 38 emails with an answer key, from
+the same generator, run **before reading the key**. It is the only real
+generalization evidence I have, and it says the predictions were pessimistic
+everywhere except hallucinated lines, where they were optimistic.
 
-*Photographs and scans of dense tables.* Even after the strip fix, E009 still swaps the
-quantities of items 11 and 12 — adjacent rows, 2 errors in 210 lines. That failure mode has not
-gone away, it has shrunk. Handwriting worse than dev's, a steeper camera angle, a table with no
-item-number column to anchor on, or a multi-column form will push it back up. It will show as
-wrong `qty` on paired lines rather than as missing lines, which is the better way to be wrong,
-but it is where my numbers will fall first.
+The seven hallucinations were almost one defect: six of them came from a single
+missed duplicate. `"PO 7781 - resending"` against `"PO 7781"` — the resend marker
+was a *suffix*, my subject normaliser only stripped prefixes, and a byte-identical
+PO from the same sender shipped its six lines a second time. Four more defects came
+out of the same run; all five are fixed and described in the commit history.
 
-*Thread messages that do two things at once.* The classifier picks one of seven labels for a
-message that chases a quote **and** changes it, or commits to part of an order **and** asks a
-question. Dev has one instance of each in isolation and I get both right; a message that mixes
-them has no right answer in this schema and I will pick the wrong half.
+**After the fixes**, the same holdout scores 0 silent losses, 0 hallucinated lines,
+0 lost, 0 phantom, classification 38/38, lines P/R 100%, qty/uom/source/context
+100%, links 100%, needs_review 1.0/1.0. That number is *not* blind any more and
+should not be read as one — it says the fixes work on the cases that produced them,
+not that the next 38 emails will score the same. The blind column is the honest
+estimate; I would expect the graders' inbox to land between the two.
 
-I originally listed a second case here — a purchase order that accepts items by description
-rather than by number, *"go ahead with the flanges and the pipe"* — on the reasoning that
-`selects_items_from_quoted` keys on labels it can name. Then I built it (`S011` in
-`tests/test_shapes.py`) rather than leaving it as a guess, and it returns exactly the flange
-and the pipe and correctly holds the valve and the gasket. The prediction was wrong. I am
-leaving the correction visible because an untested prediction and a tested one are not the
-same kind of claim, and most of the rest of this section is still the first kind.
+**The two kinds I still expect to get wrong.**
 
-I also expect `vendor_quote` to be my most fragile class. Dev's example is unmistakable — it
-quotes our own rep, with prices, lead times and FOB terms. A supplier email without those
-tells, or a distributor who is both customer and supplier, would read as an `rfq` and become a
-phantom request.
+*Photographs and scans of dense tables.* Two quantities on E009's two-page phone
+scan are still wrong — adjacent rows, 2 errors in 210 lines. Strips shrank that
+failure, they did not remove it, and the holdout simply did not contain a scan hard
+enough to trigger it. A steeper camera angle or a table with no item-number column
+to anchor on will bring it back.
+
+*Thread messages that do two things at once.* A message that chases a quote **and**
+changes it has no right answer in a seven-label schema, and I will pick the wrong
+half. The holdout's one classification miss was this shape — a rep forwarding a
+customer's correction, which is defensibly either `rfq` or `rfq_revision` — and it
+resolved itself once the other fixes landed, which is luck rather than a fix.
 
 ## How this runs for real
 
@@ -187,6 +191,13 @@ lines. A second code path would need all the same judgement and would disagree w
 ## What I know is broken
 
 - Two quantities in E009 are still wrong (adjacent rows in a scanned table).
+- Temperature was unset for most of this build, and I assumed pinning it to 0 would
+  only help. It does the opposite: on a workbook whose spec lives in the tab names,
+  context carried 0 of 54 lines at temperature 0 and 0.2, and 54 of 54 at 1.0, twice
+  each. Low temperature makes the model transcribe a row instead of rewriting it
+  self-contained — which is the whole task. It is pinned at 1.0 now, in the cache
+  key, with the measurement in the comment. I do not know where between 0.2 and 1.0
+  the behaviour flips, and I have not looked.
 - `verify.py` cannot ground a line that came from a picture — there is no text to check it
   against — so image-sourced lines ship on the model's word alone. On the dev inbox that is
   **46 of 210 lines, 22%**: the two phone photos, the scan and the pasted screenshot. Those
