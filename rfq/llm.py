@@ -71,13 +71,26 @@ class Ledger:
     by_email: dict[str, dict] = field(default_factory=dict)
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
+    cold_prompt_tokens: int = 0
+    cold_completion_tokens: int = 0
+    cold_cost_usd: float = 0.0
+
     def record(self, email_id: str, *, model: str, pt: int, ct: int, cost: float, cached: bool) -> None:
         with self._lock:
             row = self.by_email.setdefault(
                 email_id,
-                {"calls": 0, "cache_hits": 0, "prompt_tokens": 0, "completion_tokens": 0, "cost_usd": 0.0, "models": {}},
+                {"calls": 0, "cache_hits": 0, "prompt_tokens": 0, "completion_tokens": 0, "cost_usd": 0.0,
+                 "cold_cost_usd": 0.0, "models": {}},
             )
             row["models"][model] = row["models"].get(model, 0) + 1
+            # Every answer, cached or not, carries the usage it was recorded with, so
+            # the report can always say what this inbox costs cold — otherwise a replay
+            # reports $0.00 and tells you nothing about running it for real.
+            self.cold_prompt_tokens += pt
+            self.cold_completion_tokens += ct
+            cold = cost if not cached else price(model, pt, ct)
+            self.cold_cost_usd = round(self.cold_cost_usd + cold, 6)
+            row["cold_cost_usd"] = round(row["cold_cost_usd"] + cold, 6)
             if cached:
                 row["cache_hits"] += 1
                 self.cache_hits += 1
@@ -100,6 +113,13 @@ class Ledger:
             "completion_tokens": self.completion_tokens,
             "cost_usd": round(self.cost_usd, 4),
             "cost_per_email_usd": round(self.cost_usd / n_emails, 5) if n_emails else 0.0,
+            # what this inbox costs from an empty cache, whether or not this run paid it
+            "cold_run": {
+                "prompt_tokens": self.cold_prompt_tokens,
+                "completion_tokens": self.cold_completion_tokens,
+                "cost_usd": round(self.cold_cost_usd, 4),
+                "cost_per_email_usd": round(self.cold_cost_usd / n_emails, 5) if n_emails else 0.0,
+            },
             "pricing_table_usd_per_1m": PRICING,
             "per_email": self.by_email,
         }

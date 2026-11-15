@@ -97,10 +97,15 @@ def main(argv: list[str] | None = None) -> int:
         flagged = [r.id for r in results if r.needs_review]
         lines = sum(len(v["line_items"]) for v in parsed.values())
         print(f"{len(parsed)} emails -> {args.out}  ({lines} line items)")
+        cold = cost["cold_run"]
         print(
             f"  model calls {cost['model_calls']}, cache hits {cost['cache_hits']}, "
-            f"${cost['cost_usd']:.4f} total, ${cost['cost_per_email_usd']:.5f}/email"
+            f"${cost['cost_usd']:.4f} spent this run"
             + ("  [replayed from cache, no API key]" if cost["offline_replay"] else "")
+        )
+        print(
+            f"  cold run would be {cold['prompt_tokens']:,} in / {cold['completion_tokens']:,} out tokens, "
+            f"${cold['cost_usd']:.4f} (${cold['cost_per_email_usd']:.5f}/email)"
         )
         print(f"  needs_review: {len(flagged)}" + (f" ({', '.join(flagged)})" if flagged else ""))
         if degraded:
