@@ -136,3 +136,39 @@ cache/             recorded model answers — committed, this is what makes repl
 scripts/score.py   the grader, as described in data/README.md
 tests/             the resilience inbox
 ```
+
+## Optional: the viewer
+
+```bash
+rfq-ui                 # or: python ui/server.py
+```
+
+Opens `http://127.0.0.1:8765` (loopback only — nothing here talks to anything but the model
+provider). Drop `.eml` files on the page. They run through the same pipeline `rfq parse` uses
+and replay from the committed cache, so the dev inbox returns in under a second for $0.00.
+
+It is a viewer, not a second implementation. Everything on screen comes from `parse`'s own
+output and per-email traces. It never writes `parsed.json`, `cache/` or anything else the
+submission depends on; the only file it creates is `ui/decisions.jsonl`.
+
+**What it shows.** The left pane groups the inbox the way a rep works — parties, then requests,
+then the messages in each. A request is a thread, not an email: E003 and E004 are one request
+whose order changed, E006 and E008 are one request sent twice. Suppliers and no-action mail
+(bounces, marketing) are bucketed separately so they never sit in the queue looking live.
+
+Clicking a message walks it through the six stages:
+
+1. **the message** — with the thread history greyed out and labelled *not given to the
+   extractor*. On E012 you can see a whole seven-line RFQ sitting in that grey zone.
+2. **documents found** — each attachment, how it was routed, and for pictures the actual image
+3. **classification** — the label, the model's reason, and any code override
+4. **line items kept** — click a line for its `raw` and the headings its context came from
+5. **dropped by verification** — what was thrown away and why
+6. **outcome** — the review flag and what that email cost
+
+A rep can accept or overturn any line; those go to `ui/decisions.jsonl`. With no answer key for
+real mail, that file is the only labelled data that exists — see the end of `DECISIONS.md`.
+
+```bash
+python ui/rollup.py parsed.json --emails data/dev/emails   # the grouping, on the console
+```
