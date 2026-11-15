@@ -29,10 +29,17 @@ no amount of regex does them.
 Between the two sits the thing I'd defend first: **every extracted line's `raw` must actually
 occur in the document it claims to come from**, by token coverage rather than substring (a
 pasted spreadsheet splits one row across three lines, so substring is too strict). Lines that
-fail are dropped. This is not theoretical — on E006 the call reading the 44-line PDF tried to
-emit the two gasket lines that live in the email body, because the body is supplied as ambient
-context. Code dropped them before they shipped. Precision is a property of the system, not a
-hope about a prompt.
+fail are dropped. Precision is a property of the system, not a hope about a prompt.
+
+It was not theoretical while building: reading E006's PDF, the model also returned the two
+gasket lines that live in the email body, because the body is supplied as ambient context. The
+check dropped them, the per-email trace said why, and that told me the prompt was wrong as well
+as the output — a sentence pointing at an item held elsewhere is not itself a line. Fixing that
+removed the behaviour at source, so **the current run drops nothing on the dev inbox**: all 24
+`dropped_lines` are empty. Do not read that as the check being idle; read it as the dev inbox no
+longer provoking it. Which also means the guard is exercised by `tests/test_documents.py` and
+not by dev, and a verification layer that never fires on the data you can see is one I would
+want more evidence for than I have.
 
 The second thing I'd defend: **quoted history is excluded from what the model sees**, not
 merely labelled. E012 is a status inquiry with an entire seven-line RFQ pasted underneath;
