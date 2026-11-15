@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ridgeline RFQ Desk</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div id="drop-veil"><div>drop .eml files to read them</div></div>
+
+<header>
+  <div class="brand">
+    <strong>Ridgeline RFQ Desk</strong>
+    <span class="muted">what the inbox reader made of your mail</span>
+  </div>
+  <div id="totals" class="totals"></div>
+  <label class="btn">
+    choose .eml files<input type="file" id="picker" multiple accept=".eml,message/rfc822" hidden>
+  </label>
+</header>
+
+<main>
+  <aside id="sidebar">
+    <div id="empty" class="empty">
+      <p><strong>Drop .eml files anywhere on this page.</strong></p>
+      <p class="muted">One email or forty. They run through the same pipeline the
+      <code>parse</code> command uses, replaying from the committed cache where it can —
+      so the dev inbox costs nothing and returns instantly.</p>
+    </div>
+    <div id="parties"></div>
+  </aside>
+
+  <section id="detail">
+    <div class="placeholder muted">Select a request on the left.</div>
+  </section>
+</main>
+
+<div id="progress" class="progress hidden">
+  <div class="spinner"></div>
+  <div id="progress-text">reading…</div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
