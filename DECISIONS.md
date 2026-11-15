@@ -18,22 +18,19 @@ Treat those with suspicion: I iterated against this key. See *Predictions*.
 **Code decides everything checkable; the model decides only what requires reading; nothing the
 model says ships without being verified against the source.**
 
-Code owns MIME, the current-vs-quoted split, routing attachments by magic bytes, hidden sheets,
-text-layer-vs-scan, the uom vocabulary, de-duplication, duplicate and revision links, and every
-`needs_review` rule. The model owns which of seven classes, which rows are items, and which
-context belongs on which line — reading judgements no regex does.
+Code owns MIME, the current-vs-quoted split, routing by magic bytes, hidden sheets, scan
+detection, the uom vocabulary, de-duplication, the thread links and every `needs_review` rule.
+The model owns the class, which rows are items, and which context belongs on which line.
 
 Between them sits the thing I'd defend first: **every line's `raw` must occur in the document it
-claims to come from**, by token coverage rather than substring (a pasted spreadsheet splits one
-row across three lines). Lines that fail are dropped. It caught the model re-emitting the body's
-gasket lines while reading E006's PDF; tightening the prompt then removed the cause, so the
-current run drops nothing on dev and the guard is exercised by `tests/test_documents.py` instead.
-A verification layer with no live example on the data you can see is one I'd want more evidence
-for than I have.
+claims to come from**, by token coverage not substring (a pasted spreadsheet splits one row
+across three lines). Failures are dropped. It caught the model re-emitting the body's gasket
+lines while reading E006's PDF; tightening the prompt removed the cause, so the current run
+drops nothing on dev and the guard lives in `tests/test_documents.py` instead — a verification
+layer with no live example is one I'd want more evidence for than I have.
 
 Second: **quoted history is excluded from what the model sees**, not labelled. E012 is a status
-inquiry with a seven-line RFQ pasted underneath; none of it reaches the extractor, so there is no
-opportunity to hallucinate it.
+inquiry with a seven-line RFQ pasted underneath; none of it reaches the extractor.
 
 ## Something in the data that surprised me
 
@@ -59,14 +56,14 @@ what it is; the model called it `other` — defensible — and the rule then for
 it leaves with no lines and no flag. A textbook silent loss, the failure the same document ranks
 as most expensive, produced by following the format.
 
-What I did: when nothing in an email could be read and the headers do not positively say
-machine-generated, code overrides the class to `rfq` so the flag becomes legal, and flags it. I
-am choosing a possible phantom request over a possible silent loss, on the brief's own asymmetry.
+So when nothing could be read and the headers do not positively say machine-generated, code
+overrides the class to `rfq` so the flag becomes legal, and flags it — choosing a possible
+phantom request over a possible silent loss, on the brief's own asymmetry.
 
 Smaller: *"not items in quoted earlier messages"* is wrong on E020, where "go ahead with items 1,
-2 and 4" names items that exist **only** in the quoted quote. I kept the rule with three declared
-exceptions, each detectable from the current message: a message selecting numbered items from
-history, our own rep forwarding a customer, and a revision restating an order.
+2 and 4" names items existing **only** in the quoted quote. I kept the rule with three declared
+exceptions, each detectable from the current message: selecting numbered items from history, our
+own rep forwarding a customer, and a revision restating an order.
 
 ## Predictions for the held-out inbox
 
@@ -87,34 +84,32 @@ as a wrong `qty` rather than a missing line, which is the better way to be wrong
 no right answer in a seven-label schema, and I will pick the wrong half. Same for a rep relaying
 a customer's correction: `rfq` and `rfq_revision` are both defensible.
 
-I also predicted a PO accepting items by description would fail. Then I built it (`S011` in
-`tests/test_shapes.py`) instead of leaving it a guess, and it returns exactly the right two lines.
-The prediction was wrong; I leave the correction visible because an untested prediction and a
-tested one are not the same kind of claim.
+I also predicted a PO accepting items by description would fail. I built it (`S011` in
+`tests/test_shapes.py`) rather than leave it a guess, and it returns the right two lines. The
+prediction was wrong; I leave the correction visible because an untested prediction and a tested
+one are not the same kind of claim.
 
 ## How this runs for real
 
-**3,000 emails/day by webhook.** The webhook writes raw bytes to object storage and pushes a job.
-Workers run phase A, which already shares nothing between emails. Phase B needs its thread, so it
-keys on a thread id and serialises per thread — the one piece that does not scale as written,
-because `link_inbox` walks a list in memory. At $0.012 that is $36/day, and the classification
-gate means the ~40% carrying no items costs a twentieth of it. **Built:** per-email isolation,
-parallelism, cost accounting. **Not built:** the queue, the thread store.
+**3,000/day by webhook.** The webhook stores raw bytes and pushes a job; workers run phase A,
+which already shares nothing between emails. Phase B needs its thread, so it keys on a thread id
+and serialises per thread — the one piece that does not scale as written, since `link_inbox`
+walks a list in memory. At $0.012 that is $36/day, and the gate means the ~40% carrying no items
+costs a twentieth of it. **Built:** isolation, parallelism, cost accounting. **Not:** the queue
+and thread store.
 
 **Provider down two hours.** Four retries with backoff and jitter; past that the email returns
-flagged and the run continues — a backlog of flagged emails, not a crash. Verified by running the
-whole dev inbox with the key removed. **Missing:** a circuit breaker (every email pays its own
-retries) and a requeue.
+flagged and the run continues — a backlog, not a crash. Verified by running the whole dev inbox
+with the key removed. **Missing:** a circuit breaker and a requeue.
 
-**A 300-page PDF.** Capped at 20 pages, and a truncated document sets `needs_review` naming the
-file. Text chunks at 120 rows — the binding constraint is *output*, ~70 tokens a row against a
-12,000 budget. Oversized spreadsheets cap at 800 rows and say how many they did not read.
-**Built**, though the cap is blunt; the right version prices the document and asks.
+**A 300-page PDF.** Capped at 20 pages; a truncated document sets `needs_review` naming the file.
+Text chunks at 120 rows — the binding constraint is *output*, ~70 tokens a row against a 12,000
+budget. Spreadsheets cap at 800 rows and report how many they did not read. **Built**, though the
+cap is blunt; the right version prices the document and asks.
 
-**The same email twice.** Two mechanisms. The cache is content-addressed, so a second delivery
-costs nothing. The duplicate rule then marks it: same sender, same subject once `Re:`/`FW:`/
-`RESEND:` and trailing resend markers are stripped, plus content equality by attachment hash,
-body, or extracted lines — or identical files where the message calls itself a resend. **Built.**
+**The same email twice.** The cache is content-addressed, so a second delivery costs nothing; the
+duplicate rule then marks it, on same sender plus content equality by attachment hash, body or
+extracted lines — or identical files where the message calls itself a resend. **Built.**
 
 ## What I know is broken
 
@@ -129,23 +124,17 @@ body, or extracted lines — or identical files where the message calls itself a
   task. Pinned at 1.0, in the cache key. I have not found where between 0.2 and 1.0 it flips.
 - The classifier's second-opinion escalation has never fired on real data.
 
-## What I rejected
+## What I rejected, and what's next
 
-A stronger model instead of better framing (measured: `gpt-5` 14/28 against strips' 28/28).
-Defaulting to `gpt-5.x` because this key reached it — *you* run the held-out inbox, and a model
-your key lacks kills the run. One extraction call per email: per document gives correct `source`
-by construction, bounded prompts, parallelism, and failure isolation. A regex path for the "easy"
-plain-text emails: E001 puts the quantity last, E002 says "a couple caps", E018 is a spreadsheet
-pasted flat — a second path needs the same judgement and would disagree with the first.
+Rejected: a stronger model instead of better framing (measured above); defaulting to `gpt-5.x`
+because *this* key reached it, when yours runs the held-out inbox and a model it lacks kills the
+run; one extraction call per email, since per document gives correct `source` by construction,
+bounded prompts and failure isolation; and a regex path for the "easy" emails — E001 puts the
+quantity last, E002 says "a couple caps", E018 is a spreadsheet pasted flat.
 
-## What's next
-
-1. Ground image-sourced lines against a transcription pass — closes the one place a hallucination
-   still ships.
-2. A perturbation harness: mutate the dev emails (re-skew scans, rename headings, reorder sheets)
-   and watch which numbers move. Dev at 100% tells me nothing more.
-3. The queue, circuit breaker and requeue above.
-4. The matcher, designed in `MATCHER.md`.
+Next: ground image-sourced lines against a transcription pass; a perturbation harness (mutate the
+dev emails and see which numbers move — dev at 100% tells me nothing more); the queue, breaker
+and requeue; then the matcher in `MATCHER.md`.
 
 ## Time
 

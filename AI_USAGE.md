@@ -11,15 +11,14 @@ servers, no custom skills, **no `CLAUDE.md` or other instruction files**. Everyt
 knew it read out of `ASSESSMENT.md`, `data/README.md`, the 24 `.eml` files and `answer_key.json`
 at the start of the session.
 
-That was deliberate. The failure mode I feared was an agent confidently writing a parser for
-emails it had never opened, so the first instruction was to read the whole package and explain
-the problem back to me before proposing anything, and the second was to design the architecture
-in prose before writing a line of code. Both outputs are in the transcript ahead of the first
-file.
+Deliberate. The failure mode I feared was an agent writing a parser for emails it had never
+opened, so the first instruction was to read the whole package and explain the problem back to
+me, and the second was to design the architecture in prose before any code. Both are in the
+transcript ahead of the first file.
 
 The tooling that mattered is not an agent feature: `scripts/score.py`, written early,
-implementing the brief's metrics in the order it says it grades them. After that existed, every
-change was judged by a number rather than by whether the diff looked reasonable.
+implementing the brief's metrics in its stated order. After that, every change was judged by a
+number rather than by whether the diff looked reasonable.
 
 ## How I worked
 
@@ -31,9 +30,8 @@ re-run. Five loops took dev from P 70.6% with 87 hallucinated lines to P/R 100% 
 
 I reviewed every diff, under two rules. A fix goes in the layer that owns the decision — vague
 quantities became code in `verify.py`, not another sentence in a prompt. And no fix may name a
-string from the dev set: rules describe phenomena (hidden sheets, superseded revisions,
-decorative images, bounce envelopes), because the held-out inbox has the same situations in
-different words.
+string from the dev set: rules describe phenomena, because the held-out inbox has the same
+situations in different words.
 
 ## Three moments
 
