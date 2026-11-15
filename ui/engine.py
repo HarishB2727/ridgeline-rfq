@@ -129,6 +129,11 @@ def stage(job_id: str, inbox: Path) -> list[dict]:
                 from_us=e.from_us,
                 body_chars=len(e.body_current or ""),
                 quoted_chars=len(e.body_quoted or ""),
+                person=e.sender_name or e.sender_addr.split("@")[0],
+                # the organisation, from the domain rather than the signature block:
+                # a signature is prose and parsing it guesses, a domain is a fact
+                org=(e.sender_domain.split(".")[0] or e.sender_domain).replace("-", " ").title(),
+                domain=e.sender_domain,
             )
         except Exception as exc:
             row.update(sender="?", subject=f"(could not be parsed: {exc})", attachments=[])

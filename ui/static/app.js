@@ -1,20 +1,25 @@
-/* Ridgeline RFQ pipeline — the stages are the columns, each email is a row.
-   A window onto the pipeline, not a second implementation: everything shown
-   comes from the same functions `rfq parse` calls. */
+/* Ridgeline RFQ pipeline — the stages are the columns, each email is a row,
+   and every cell opens the thing it is talking about.
+   A window onto the pipeline, not a second implementation. */
 
 const $ = (s, r = document) => r.querySelector(s);
 const el = (t, c, x) => { const n = document.createElement(t); if (c) n.className = c; if (x !== undefined) n.textContent = x; return n; };
 
-const STAGES = [
-  { key: "ingest",    n: 1, title: "Open the envelope",   kind: "code" },
-  { key: "documents", n: 2, title: "Read attachments",    kind: "code" },
-  { key: "classify",  n: 3, title: "What kind of email?", kind: "ai"   },
-  { key: "extract",   n: 4, title: "Read each document",  kind: "ai"   },
-  { key: "verify",    n: 5, title: "Check every line",    kind: "code" },
-  { key: "link",      n: 6, title: "Place in the inbox",  kind: "code" },
+/* the columns.  `step` is the pipeline stage a column shows, or null for the
+   two that describe the input rather than a stage. */
+const COLS = [
+  { key: "who",        step: null, label: "Person / organisation", kind: null   },
+  { key: "email",      step: null, label: "The email, as is",      kind: null   },
+  { key: "code",       step: 1,    label: "What code made of it",  kind: "code" },
+  { key: "docs",       step: 2,    label: "Attachments",           kind: "code" },
+  { key: "classify",   step: 3,    label: "Classification",        kind: "ai"   },
+  { key: "extract",    step: 4,    label: "Model reads documents", kind: "ai"   },
+  { key: "verify",     step: 5,    label: "Check every line",      kind: "code" },
+  { key: "outcome",    step: 6,    label: "Outcome",               kind: "code" },
 ];
+const STEP_OF = { code: "ingest", docs: "documents", classify: "classify", extract: "extract", verify: "verify", outcome: "link" };
 
-let JOB = null, SNAP = null, OPEN = null, DETAIL = {}, timer = null;
+let JOB = null, SNAP = null, OPEN = null, PANEL = null, DETAIL = {}, timer = null;
 
 /* ───────────────────────────────────────────────────────────── upload */
 
@@ -51,7 +56,7 @@ function poll() {
   });
 }
 
-/* ───────────────────────────────────────────────────────────── render */
+/* ───────────────────────────────────────────────────────────── chrome */
 
 function apply(s) {
   SNAP = s;
@@ -69,12 +74,12 @@ function apply(s) {
 function renderPipebar() {
   const bar = $("#pipebar");
   if (bar.childElementCount) return;
-  bar.append(el("div", "ph lead", "email"));
-  for (const st of STAGES) {
-    const h = el("div", `ph ${st.kind === "ai" ? "ai" : "codey"}`);
+  for (const c of COLS) {
+    const h = el("div", `ph ${c.kind === "ai" ? "ai" : c.kind === "code" ? "codey" : "plain"}`);
     const n = el("div", "n");
-    n.append(`STEP ${st.n}`, el("span", "tag", st.kind === "ai" ? "model" : "code"));
-    h.append(n, el("div", "t", st.title));
+    if (c.step) { n.append(`STEP ${c.step}`, el("span", "tag", c.kind === "ai" ? "model" : "code")); }
+    else n.append("INPUT");
+    h.append(n, el("div", "t", c.label));
     bar.append(h);
   }
 }
@@ -84,110 +89,128 @@ function renderMeter(s) {
   const done = s.order.filter(i => s.emails[i].state === "done").length;
   const bits = [[`${done}/${s.order.length}`, "processed"]];
   if (s.cost) bits.push(
-    [`${s.cost.model_calls}`, "calls"],
-    [`${s.cost.cache_hits}`, "cached"],
+    [`${s.cost.model_calls}`, "calls"], [`${s.cost.cache_hits}`, "cached"],
     [`$${(s.cost.cold_run?.cost_usd ?? 0).toFixed(4)}`, "cold"]);
   if (s.state === "running") bits.push([`${s.elapsed}s`, ""]);
   for (const [v, l] of bits) { const x = el("span"); x.append(el("b", null, v)); if (l) x.append(" ", el("span", "muted", l)); m.append(x); }
 }
 
-function cell(stateCls, body) {
-  const c = el("div", `cell ${stateCls}`);
-  for (const b of body) if (b) c.append(b);
+/* ─────────────────────────────────────────────────────────────── grid */
+
+function cellBox(key, id, stateCls, kids, openable = true) {
+  const c = el("div", `cell ${stateCls} ${openable ? "clickable" : ""}`);
+  for (const k of kids) if (k) c.append(k);
+  if (openable) {
+    const v = el("span", "view");
+    v.append("view", el("span", "arrow", "›"));
+    c.append(v);
+    c.onclick = () => openPanel(id, key);
+    if (OPEN === id && PANEL === key) c.classList.add("on");
+  }
   return c;
 }
 const val = (big, rest) => { const v = el("div", "v"); v.append(el("span", "big", big)); if (rest) v.append(rest); return v; };
 
 function renderGrid(s) {
   const g = $("#grid");
-  const openNow = OPEN;
   g.innerHTML = "";
   for (const q of s.queue) {
     const e = s.emails[q.id] || {};
     const sum = e.summary || {};
     const st = e.steps || {};
-    const row = el("div", `erow ${openNow === q.id ? "open" : ""}`);
+    const row = el("div", `erow ${OPEN === q.id ? "open" : ""}`);
+    const busy = e.state === "running" || e.state === "linking";
 
-    /* lead cell */
-    const lead = el("div", "cell lead");
-    lead.append(el("span", "caret", "▶"));
-    const main = el("div", "lead-main");
-    main.append(el("div", "eid", q.id));
-    main.append(el("div", "esubj", q.subject));
-    main.append(el("div", "esender", q.sender || ""));
-    lead.append(main);
-    if (e.state === "running" || e.state === "linking") lead.append(el("span", "dotpulse"));
-    lead.onclick = () => toggle(q.id);
-    row.append(lead);
+    /* 1 — who */
+    const who = el("div", "cell who");
+    const wm = el("div", "lead-main");
+    wm.append(el("div", "person", q.person || "—"));
+    wm.append(el("div", "org", q.org || q.domain || ""));
+    wm.append(el("div", "eid", q.id));
+    who.append(wm);
+    if (busy) who.append(el("span", "dotpulse"));
+    if (q.from_us) who.append(el("span", "chip", "our rep"));
+    row.append(who);
 
-    /* 1 ingest */
-    row.append(cell(st.ingest || "pending", [
+    /* 2 — the email as is */
+    row.append(cellBox("email", q.id, "", [
       val(`${q.body_chars ?? 0}`, el("span", "muted", "chars")),
-      q.quoted_chars ? el("div", "sub", `+${q.quoted_chars} thread — excluded`)
-        : el("div", "sub", "no thread"),
-      q.from_us ? el("span", "chip", "our rep") : null,
+      el("div", "sub", q.subject),
     ]));
 
-    /* 2 documents */
+    /* 3 — what code made of it (step 1) */
+    row.append(cellBox("code", q.id, st.ingest || "pending", [
+      val(`${q.body_chars ?? 0}`, el("span", "muted", "current")),
+      q.quoted_chars
+        ? el("div", "sub warnish", `+${q.quoted_chars} thread — excluded`)
+        : el("div", "sub", "no thread below"),
+    ]));
+
+    /* 4 — attachments (step 2) */
     const docs = sum.documents || [];
+    const att = docs.filter(d => d.source !== "body");
     const kinds = {};
-    for (const d of docs) if (d.source !== "body") kinds[d.kind] = (kinds[d.kind] || 0) + 1;
-    const nAtt = docs.filter(d => d.source !== "body").length || (q.attachments || []).length;
-    const bad = docs.some(d => d.kind === "unreadable");
-    row.append(cell((bad ? "warnc " : "") + (st.documents || "pending"), [
+    for (const d of att) kinds[d.kind] = (kinds[d.kind] || 0) + 1;
+    const nAtt = att.length || (q.attachments || []).length;
+    const bad = att.some(d => d.kind === "unreadable");
+    row.append(cellBox("docs", q.id, (bad ? "warnc " : "") + (st.documents || "pending"), [
       val(`${nAtt}`, el("span", "muted", nAtt === 1 ? "file" : "files")),
-      el("div", "sub", docs.length
-        ? Object.entries(kinds).map(([k, v]) => `${v} ${k}`).join(", ") || "body only"
-        : (q.attachments || []).join(", ") || "body only"),
+      el("div", "sub", att.length ? Object.entries(kinds).map(([k, v]) => `${v} ${k}`).join(", ")
+        : (q.attachments || []).join(", ") || "none"),
       bad ? el("span", "chip warn", "unreadable") : null,
-    ]));
+    ], nAtt > 0));
 
-    /* 3 classify */
-    const cCalls = (e.calls || []).filter(c => /classification/.test(c.label) || c.label.startsWith("Decide"));
-    row.append(cell(st.classify || "pending", [
-      sum.classification ? el("span", `chip ${["rfq", "rfq_revision", "purchase_order"].includes(sum.classification) ? "ok" : ""}`, sum.classification) : el("div", "v muted", "—"),
-      cCalls.length ? el("div", "sub", `${cCalls.length} model call${cCalls.length > 1 ? "s" : ""}`) : null,
-    ]));
+    /* 5 — classification (step 3) */
+    const cc = (e.calls || []).filter(c => (c.label || "").startsWith("Decide"));
+    const isItem = ["rfq", "rfq_revision", "purchase_order"].includes(sum.classification);
+    row.append(cellBox("classify", q.id, st.classify || "pending", [
+      sum.classification ? el("span", `chip ${isItem ? "ok" : ""}`, sum.classification)
+        : el("div", "v muted", "—"),
+      el("div", "sub", cc.length ? `${cc.length} model call${cc.length > 1 ? "s" : ""}` : "not run"),
+    ], cc.length > 0));
 
-    /* 4 extract */
-    const xCalls = (e.calls || []).length - cCalls.length;
+    /* 6 — model reads documents (step 4) */
+    const xc = (e.calls || []).length - cc.length;
     const skipped = st.extract === "skipped";
-    row.append(cell(st.extract || "pending", [
-      skipped ? el("span", "chip", "skipped") : val(`${xCalls}`, el("span", "muted", xCalls === 1 ? "call" : "calls")),
-      el("div", "sub", skipped ? "carries no items — the gate" : `${sum.n_items ?? 0} lines returned`),
-    ]));
+    row.append(cellBox("extract", q.id, st.extract || "pending", [
+      skipped ? el("span", "chip", "skipped") : val(`${xc}`, el("span", "muted", xc === 1 ? "call" : "calls")),
+      el("div", "sub", skipped ? "no items to read — the gate" : `${sum.n_items ?? 0} lines returned`),
+    ], xc > 0));
 
-    /* 5 verify */
-    row.append(cell((sum.n_dropped ? "warnc " : "") + (st.verify || "pending"), [
+    /* 7 — check every line (step 5) */
+    row.append(cellBox("verify", q.id, (sum.n_dropped ? "warnc " : "") + (st.verify || "pending"), [
       val(`${sum.n_items ?? 0}`, el("span", "muted", "kept")),
       el("div", "sub", sum.n_dropped ? `${sum.n_dropped} dropped` : "nothing dropped"),
-    ]));
+    ], e.state === "done"));
 
-    /* 6 link */
-    const flag = sum.needs_review ? "warnc" : e.error ? "badc" : st.link === "done" ? "done" : (st.link || "pending");
-    row.append(cell(flag, [
+    /* 8 — outcome (step 6) */
+    const flag = sum.needs_review ? "warnc" : e.error ? "badc" : (st.link || "pending");
+    row.append(cellBox("outcome", q.id, flag, [
       sum.needs_review ? el("span", "chip warn", "needs review")
         : sum.duplicate_of ? el("span", "chip", "duplicate")
         : sum.revises ? el("span", "chip", "revision")
-        : st.link === "done" ? el("span", "chip ok", "ready") : el("div", "v muted", "—"),
+        : st.link === "done" ? el("span", "chip ok", "ready to quote") : el("div", "v muted", "—"),
       el("div", "sub", sum.duplicate_of ? `of ${sum.duplicate_of}`
-        : sum.revises ? `revises ${sum.revises}` : (sum.review_reason || "").slice(0, 60)),
-    ]));
+        : sum.revises ? `revises ${sum.revises}`
+        : sum.needs_review ? (sum.review_reason || "").slice(0, 48)
+        : `${sum.n_items ?? 0} lines`),
+    ], e.state === "done"));
 
     g.append(row);
 
-    if (openNow === q.id) {
+    if (OPEN === q.id) {
       const d = el("div", "detail");
       d.id = "detail-" + q.id;
       d.append(el("div", "note", "loading…"));
       row.append(d);
-      if (DETAIL[q.id]) renderDetail(DETAIL[q.id], d);
+      if (DETAIL[q.id]) renderPanel(DETAIL[q.id], d);
     }
   }
 }
 
-function toggle(id) {
-  OPEN = OPEN === id ? null : id;
+function openPanel(id, key) {
+  if (OPEN === id && PANEL === key) { OPEN = null; PANEL = null; }
+  else { OPEN = id; PANEL = key; }
   renderGrid(SNAP);
   if (OPEN) loadDetail(OPEN);
 }
@@ -198,20 +221,12 @@ function loadDetail(id, force) {
     .then(r => r.json()).then(e => {
       DETAIL[id] = e;
       const host = $("#detail-" + id);
-      if (host) renderDetail(e, host);
+      if (host) renderPanel(e, host);
     });
 }
 
-/* ──────────────────────────────────────────────────── expanded detail */
+/* ───────────────────────────────────────────────────── panel plumbing */
 
-function sec(n, title, after) {
-  const d = el("div", "sec");
-  d.append(el("div", "num", String(n)));
-  const h = el("h3", null, title + " ");
-  if (after) h.append(el("span", "after", "— " + after));
-  d.append(h);
-  return d;
-}
 function card(title, chips = [], warn) {
   const c = el("div", warn ? "card warncard" : "card");
   const h = el("div", "ch"); h.append(el("span", null, title));
@@ -220,137 +235,162 @@ function card(title, chips = [], warn) {
   c.append(h, b); c.body = b; return c;
 }
 
-function renderDetail(e, host) {
+function panelHead(e, key) {
+  const col = COLS.find(c => c.key === key);
+  const h = el("div", "phead");
+  if (col.step) h.append(el("div", "num", String(col.step)));
+  h.append(el("h3", null, col.label));
+  if (col.kind) h.append(el("span", col.kind === "ai" ? "chip ai" : "chip code",
+    col.kind === "ai" ? "model call" : "code only"));
+  const x = el("button", "closep", "✕");
+  x.onclick = () => { OPEN = null; PANEL = null; renderGrid(SNAP); };
+  h.append(el("div", "spacer"), x);
+  return h;
+}
+
+function renderPanel(e, host) {
   host.innerHTML = "";
-  const env = e.envelope || {}, sum = e.summary || {}, r = e.result || {};
+  host.append(panelHead(e, PANEL));
+  const body = el("div", "pbody");
+  host.append(body);
+  ({
+    email: panelEmail, code: panelCode, docs: panelDocs, classify: panelClassify,
+    extract: panelExtract, verify: panelVerify, outcome: panelOutcome,
+  }[PANEL] || panelEmail)(e, body);
+}
 
-  /* email | result, side by side */
-  const cols = el("div", "cols");
+/* ─────────────────────────────────────────────────────────── panels */
 
-  const left = card("the email, as it arrived");
+function panelEmail(e, host) {
+  const env = e.envelope || {};
+  const c = card("the email, as it arrived");
   const kv = el("dl", "kv");
   for (const [k, v] of [["from", env.from], ["to", env.to], ["date", env.date], ["subject", env.subject]])
     if (v) kv.append(el("dt", null, k), el("dd", null, v));
-  left.body.append(kv);
-  const pre = el("pre", "txt scroll"); pre.textContent = e.body?.current || "(empty body)";
-  left.body.append(pre);
+  c.body.append(kv);
+  const pre = el("pre", "txt"); pre.textContent = e.body?.current || "(empty body)";
+  c.body.append(pre);
   if (e.body?.quoted) {
     const q = el("div", "quoted");
     const lbl = el("div", "lbl");
     lbl.append(el("span", "chip code", "step 1"), "thread history — never shown to the model");
-    const p2 = el("pre", "txt scroll"); p2.textContent = e.body.quoted;
+    const p2 = el("pre", "txt"); p2.textContent = e.body.quoted;
     q.append(lbl, p2);
-    left.body.append(q);
+    c.body.append(q);
   }
-  cols.append(left);
+  host.append(c);
+}
 
-  const right = card("what came out", sum.n_items != null ? [el("span", "chip ok", `${sum.n_items} lines`)] : []);
-  if (e.state !== "done") right.body.append(el("div", "note", "Not processed yet — press Process."));
-  else {
-    if (r.needs_review) {
-      const w = card("a human has to look at this", [], true);
-      w.body.append(el("div", null, r.review_reason || ""));
-      right.body.append(w);
-    }
-    right.body.append(itemsTable(r.line_items || [], e));
-  }
-  cols.append(right);
-  host.append(cols);
-
-  /* stage 1 */
-  host.append(sec(1, "Open the envelope", "code"));
-  const c1 = card("what code decided");
-  const row1 = el("div", "row");
-  row1.append(el("span", "chip code", `current message ${(e.body?.current || "").length} chars`));
-  row1.append(el("span", "chip", `thread history ${(e.body?.quoted || "").length} chars — excluded`));
+function panelCode(e, host) {
+  const c = card("what code decided, before any model saw it");
+  const row = el("div", "row");
+  row.append(el("span", "chip code", `current message ${(e.body?.current || "").length} chars`));
+  row.append(el("span", (e.body?.quoted ? "chip warn" : "chip"),
+    `thread history ${(e.body?.quoted || "").length} chars — excluded`));
   for (const k of Object.keys(e.signals || {})) {
     if (k === "attachment_names") continue;
-    row1.append(el("span", "chip", k.replace(/_/g, " ")));
+    row.append(el("span", "chip", k.replace(/_/g, " ")));
   }
-  c1.body.append(row1);
-  host.append(c1);
+  c.body.append(row);
+  c.body.append(el("div", "note",
+    "The split is pure code: the thread below a reply was handled when it arrived, so it is removed here and never reaches the model. Everything to the right of this column works on what is left."));
+  host.append(c);
+  if (e.body?.quoted) {
+    const q = card("what was cut away", [el("span", "chip warn", `${e.body.quoted.length} chars`)]);
+    const p = el("pre", "txt"); p.textContent = e.body.quoted;
+    q.body.append(p);
+    host.append(q);
+  }
+}
 
-  /* stage 2 */
-  host.append(sec(2, "Read the attachments", "code"));
-  const c2 = card("documents found");
-  const docs = e.documents || [];
-  if (!docs.length) c2.body.append(el("div", "note", "No attachments — everything came from the body."));
+function panelDocs(e, host) {
+  const docs = (e.documents || []);
   const roles = {};
   for (const t of (e.trace?.documents || [])) roles[t.source] = t.role;
+  if (!docs.length) { const c = card("attachments"); c.body.append(el("div", "note", "None — everything came from the body.")); return host.append(c); }
   for (const doc of docs) {
-    const dr = el("div", "docrow");
-    dr.append(el("span", "docname", doc.source));
-    dr.append(el("span", doc.kind === "unreadable" ? "chip warn" : "chip", doc.kind));
-    if (roles[doc.source]) dr.append(el("span", "chip ok", roles[doc.source]));
-    if (doc.truncated) dr.append(el("span", "chip warn", "truncated"));
-    c2.body.append(dr);
-    if (doc.error) c2.body.append(el("div", "note", doc.error));
+    const chips = [el("span", doc.kind === "unreadable" ? "chip warn" : "chip", doc.kind)];
+    if (roles[doc.source]) chips.push(el("span", "chip ok", roles[doc.source]));
+    if (doc.truncated) chips.push(el("span", "chip warn", "truncated"));
+    const c = card(doc.source, chips, doc.kind === "unreadable");
+    if (doc.error) c.body.append(el("div", null, doc.error));
+    if (doc.meta && Object.keys(doc.meta).length)
+      c.body.append(el("div", "note mono", JSON.stringify(doc.meta)));
     for (const b64 of doc.images || []) {
       const img = new Image(); img.src = `data:${doc.media_type};base64,${b64}`; img.className = "shot";
-      c2.body.append(img);
+      c.body.append(img);
     }
     if (doc.text) {
-      const det = el("details", "raw");
+      const det = el("details", "raw"); det.open = docs.length === 1;
       det.append(el("summary", null, "the text the model is given"));
       const p = el("pre", "txt"); p.textContent = doc.text;
-      det.append(p); c2.body.append(det);
+      det.append(p); c.body.append(det);
     }
+    host.append(c);
   }
-  host.append(c2);
+}
 
-  /* stages 3 & 4 — the model calls */
-  const calls = e.calls || [];
-  const cc = calls.filter(c => (c.schema || "").startsWith("email_classification"));
-  const xc = calls.filter(c => !(c.schema || "").startsWith("email_classification"));
-
-  host.append(sec(3, "What kind of email?", "model call"));
-  if (!cc.length) { const n = card("not run yet"); host.append(n); }
-  for (const c of cc) host.append(callCard(c));
-  if (cc.length && !["rfq", "rfq_revision", "purchase_order"].includes(sum.classification)) {
+function panelClassify(e, host) {
+  const calls = (e.calls || []).filter(c => (c.schema || "").startsWith("email_classification"));
+  if (!calls.length) { const c = card("not run yet"); return host.append(c); }
+  for (const c of calls) host.append(callCard(c));
+  const sum = e.summary || {};
+  if (!["rfq", "rfq_revision", "purchase_order"].includes(sum.classification)) {
     const g = card("the gate");
     g.body.append(el("div", null,
-      `“${sum.classification}” carries no line items, so step 4 never ran. That is why this email cost almost nothing.`));
+      `“${sum.classification}” carries no line items, so the next column never ran. That is why this email cost almost nothing.`));
     host.append(g);
   }
+}
 
-  host.append(sec(4, "Read each document", `${xc.length} model call${xc.length === 1 ? "" : "s"}`));
-  if (!xc.length) {
-    const n = card("nothing read");
-    n.body.append(el("div", "note", e.state === "done" ? "Skipped — see the gate above." : "Not run yet."));
-    host.append(n);
+function panelExtract(e, host) {
+  const calls = (e.calls || []).filter(c => !(c.schema || "").startsWith("email_classification"));
+  if (!calls.length) {
+    const c = card("nothing read");
+    c.body.append(el("div", "note", e.state === "done"
+      ? "Skipped — this email carries no items. See the classification column." : "Not run yet."));
+    return host.append(c);
   }
-  for (const c of xc) host.append(callCard(c));
+  for (const c of calls) host.append(callCard(c));
+}
 
-  /* stage 5 */
+function panelVerify(e, host) {
   const dropped = e.trace?.dropped_lines || [];
-  host.append(sec(5, "Check every line", "code"));
-  const c5 = card("verification", [el("span", dropped.length ? "chip warn" : "chip ok",
+  const c = card("verification", [el("span", dropped.length ? "chip warn" : "chip ok",
     dropped.length ? `${dropped.length} dropped` : "nothing dropped")]);
-  c5.body.append(el("div", "note",
-    "Every line must actually occur in the document it claims to come from; the unit must be one of the fourteen allowed; headings, totals and price rows are not items."));
+  c.body.append(el("div", "note",
+    "Code, not the model. Every line must actually occur in the document it claims to come from; the unit must be one of the fourteen allowed; headings, totals and price rows are not items; a line that states no number keeps a null quantity."));
   for (const dl of dropped) {
     const b = el("div", "docrow");
     b.append(el("span", "docname", dl.raw));
     b.append(el("span", "chip warn", dl.dropped || dl.note));
-    c5.body.append(b);
+    c.body.append(b);
   }
-  host.append(c5);
+  host.append(c);
+  const kept = card("what survived", [el("span", "chip ok", `${(e.result?.line_items || []).length} lines`)]);
+  kept.body.append(itemsTable(e.result?.line_items || [], e));
+  host.append(kept);
+}
 
-  /* stage 6 */
-  host.append(sec(6, "Place it in the inbox", "code"));
-  const c6 = card("outcome");
+function panelOutcome(e, host) {
+  const r = e.result || {};
+  const c = card("outcome", [], r.needs_review);
   const o = el("div", "row");
   o.append(el("span", "chip ok", r.classification || "—"));
   if (r.duplicate_of) o.append(el("span", "chip", "duplicate of " + r.duplicate_of));
   if (r.revises) o.append(el("span", "chip", "revises " + r.revises));
-  o.append(el("span", r.needs_review ? "chip warn" : "chip ok", r.needs_review ? "needs review" : "ready to quote"));
-  c6.body.append(o);
-  if (r.review_reason) c6.body.append(el("div", "note", r.review_reason));
+  o.append(el("span", r.needs_review ? "chip warn" : "chip ok",
+    r.needs_review ? "needs review" : "ready to quote"));
+  c.body.append(o);
+  if (r.review_reason) c.body.append(el("div", null, r.review_reason));
   const per = SNAP?.cost?.per_email?.[e.id];
-  if (per) c6.body.append(el("div", "note",
+  if (per) c.body.append(el("div", "note",
     `${per.calls + per.cache_hits} model call(s) · $${(per.cold_cost_usd ?? 0).toFixed(4)} cold`
     + (per.cache_hits ? ` · ${per.cache_hits} replayed from cache, $0.00 spent` : "")));
-  host.append(c6);
+  host.append(c);
+  const t = card("the lines a rep would quote", [el("span", "chip ok", `${(r.line_items || []).length}`)]);
+  t.body.append(itemsTable(r.line_items || [], e));
+  host.append(t);
 }
 
 /* ───────────────────────────────────────────── one model call, in full */
@@ -392,8 +432,7 @@ function callCard(c) {
     const row = el("div", "row");
     row.append(el("span", "chip ok", `${resp.lines.length} lines`), el("span", "chip", resp.document_role || ""));
     R.append(row);
-    const t = el("table");
-    const hr = el("tr");
+    const t = el("table"); const hr = el("tr");
     for (const x of ["qty", "uom", "description"]) hr.append(el("th", null, x));
     t.append(hr);
     for (const ln of resp.lines.slice(0, 60)) {
@@ -416,7 +455,7 @@ function callCard(c) {
 
 function itemsTable(items, e) {
   if (!items.length) return el("div", "note",
-    "No line items. If this email needed someone to act, it is flagged above.");
+    "No line items. If this email needed someone to act, it is flagged in the outcome column.");
   const t = el("table");
   const hr = el("tr");
   for (const h of ["qty", "uom", "description", "source"]) hr.append(el("th", null, h));
@@ -467,11 +506,12 @@ function decide(email, item, action, btn, now) {
 $("#picker").addEventListener("change", ev => { addFiles(ev.target.files); ev.target.value = ""; });
 $("#process").addEventListener("click", process);
 $("#reset").addEventListener("click", () => send("/api/reset", { job: JOB }).then(() => {
-  JOB = null; SNAP = null; OPEN = null; DETAIL = {};
+  JOB = null; SNAP = null; OPEN = null; PANEL = null; DETAIL = {};
   $("#grid").innerHTML = ""; $("#meter").innerHTML = "";
   $("#pipebar").classList.add("hidden"); $("#dropzone").classList.remove("hidden");
   $("#reset").hidden = true; $("#process").disabled = true; $("#process").textContent = "Process";
 }));
+addEventListener("keydown", e => { if (e.key === "Escape" && OPEN) { OPEN = null; PANEL = null; renderGrid(SNAP); } });
 
 let depth = 0;
 addEventListener("dragenter", e => { e.preventDefault(); if (++depth === 1) $("#veil").classList.add("on"); });
