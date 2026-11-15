@@ -243,11 +243,23 @@ def _run(job: Job) -> None:
                 row["steps"]["extract"] = "done" if r.classification in ITEM_CLASSES else "skipped"
                 row["steps"]["verify"] = "done"
                 row["state"] = "linking"
+                # Which lines could actually be checked.  A picture has no text to
+                # compare a line against, so groundedness does not run on one — those
+                # lines ship on the model's reading alone and the page must say so.
+                kinds = {d.source: d.kind for d in r.documents}
+                grounded = sum(1 for l in r.lines if kinds.get(l.get("source")) == "text")
+                from_image = sum(1 for l in r.lines if kinds.get(l.get("source")) == "image")
+                from_mixed = sum(1 for l in r.lines if kinds.get(l.get("source")) == "mixed")
                 row["summary"] = {
                     "classification": r.classification,
                     "why": r.classification_why,
                     "n_items": len(r.lines),
                     "n_dropped": len(r.dropped),
+                    "grounded": grounded,
+                    "from_image": from_image,
+                    "from_mixed": from_mixed,
+                    "image_sources": sorted({l.get("source") for l in r.lines
+                                             if kinds.get(l.get("source")) in ("image", "mixed")}),
                     "documents": [
                         {"source": d.source, "kind": d.kind, "role": r.doc_roles.get(d.source),
                          "error": d.error, "truncated": d.truncated}
@@ -272,10 +284,16 @@ def _run(job: Job) -> None:
                 row["state"] = "done"
                 row["result"] = r.to_json()
                 row["trace"] = r.trace()
+                # recompute, because a revision's lines are produced in phase B —
+                # the phase A figures were taken before the merge had run
+                kinds = {d.source: d.kind for d in r.documents}
                 row["summary"] = {
                     **(row["summary"] or {}),
                     "classification": r.classification,
                     "n_items": len(r.lines),
+                    "grounded": sum(1 for l in r.lines if kinds.get(l.get("source")) == "text"),
+                    "from_image": sum(1 for l in r.lines if kinds.get(l.get("source")) == "image"),
+                    "from_mixed": sum(1 for l in r.lines if kinds.get(l.get("source")) == "mixed"),
                     "needs_review": r.needs_review,
                     "review_reason": r.review_reason,
                     "duplicate_of": r.duplicate_of,

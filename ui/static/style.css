@@ -368,3 +368,11 @@ a.mini.dl{text-decoration:none;display:inline-block}
 .ghead{display:flex;align-items:center;gap:8px;padding:20px 4px 5px;flex-wrap:wrap}
 .gleft{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
 .gright{display:flex;gap:6px;align-items:center;margin-left:auto;flex-wrap:wrap}
+
+.vgroup{border:1px solid var(--line-2);border-radius:8px;padding:10px 12px;margin-bottom:10px;
+  background:var(--panel)}
+.vgroup.warn{border-color:var(--warn-line);background:var(--warn-soft)}
+.vhead{font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:5px}
+.vhead.ok{color:var(--ok)} .vhead.warnt{color:var(--warn)}
+.vlist{margin:6px 0 0;padding-left:18px;font-size:11.5px;color:var(--faint)}
+.vlist li{margin-bottom:3px}

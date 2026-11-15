@@ -307,13 +307,17 @@ function emailRow(s, id, rel, members) {
     skipped ? "the gate — nothing to read" : `${sum.n_items ?? 0} lines returned`, xc > 0));
 
   /* 7 — the line check */
+  const unchecked = (sum.from_image || 0) + (sum.from_mixed || 0);
   row.append(cellBox("verify", id, stepCls(st.verify),
     [pill(`${sum.n_items ?? 0} kept`, sum.n_items ? "ok" : "ghost"),
-     sum.n_dropped ? pill(`${sum.n_dropped} dropped`, "warn") : null],
+     sum.n_dropped ? pill(`${sum.n_dropped} dropped`, "warn") : null,
+     unchecked ? pill(`${unchecked} unverifiable`, "ghost") : null],
     skipped ? "nothing to check — this email carries no items"
+      : !sum.n_items ? "nothing survived — see the outcome"
+      : unchecked === sum.n_items ? "read from a picture — there is no text to check against"
+      : unchecked ? `${sum.grounded} checked against the document · ${unchecked} from a picture`
       : sum.n_dropped ? "a line was not found in the document it claimed"
-      : sum.n_items ? "every line found in the document it came from"
-      : "nothing survived — see the outcome",
+      : "every line checked against the document it came from",
     e.state === "done"));
 
   /* 8 — outcome */
@@ -540,10 +544,47 @@ function panelExtract(e, host) {
 
 function panelVerify(e, host) {
   const dropped = e.trace?.dropped_lines || [];
-  const c = card("verification", [el("span", dropped.length ? "chip warn" : "chip ok",
-    dropped.length ? `${dropped.length} dropped` : "nothing dropped")]);
-  c.body.append(el("div", "note",
-    "Code, not the model. Every line must actually occur in the document it claims to come from; the unit must be one of the fourteen allowed; headings, totals and price rows are not items; a line that states no number keeps a null quantity."));
+  const items = e.result?.line_items || [];
+  const kinds = {};
+  for (const d of (e.documents || [])) kinds[d.source] = d.kind;
+  kinds["body"] = "text";
+  const checkable = items.filter(l => kinds[l.source] === "text");
+  const notCheckable = items.filter(l => kinds[l.source] && kinds[l.source] !== "text");
+
+  const c = card("verification", [
+    el("span", dropped.length ? "chip warn" : "chip ok",
+      dropped.length ? `${dropped.length} dropped` : "nothing dropped"),
+    notCheckable.length ? el("span", "chip warn", `${notCheckable.length} unverifiable`) : null,
+  ].filter(Boolean));
+
+  const g1 = el("div", "vgroup");
+  g1.append(el("div", "vhead ok", `✓ checked against the source text — ${checkable.length} line${checkable.length === 1 ? "" : "s"}`));
+  g1.append(el("div", "note",
+    "Every one of these had to occur in the document it claims to come from. A line the model returned while reading one attachment, but whose words are not in it, is dropped before it ships."));
+  c.body.append(g1);
+
+  if (notCheckable.length) {
+    const g2 = el("div", "vgroup warn");
+    const where = [...new Set(notCheckable.map(l => l.source))].join(", ");
+    g2.append(el("div", "vhead warnt",
+      `✗ cannot be checked — ${notCheckable.length} line${notCheckable.length === 1 ? "" : "s"} from ${where}`));
+    g2.append(el("div", "note",
+      "This came out of a picture. There is no text to compare a line against, so the groundedness check does not run on it and these lines ship on the model's reading alone. It is the one place a hallucination could still get through, and it is written up as a known gap in DECISIONS.md. Closing it means asking for a verbatim transcription pass first and checking the lines against that."));
+    c.body.append(g2);
+  }
+
+  const g3 = el("div", "vgroup");
+  g3.append(el("div", "vhead", "still applied to every line, whatever the source"));
+  const ul = el("ul", "vlist");
+  for (const t of [
+    "the unit must be one of the fourteen the format allows, or null",
+    "a heading, a totals row or a price label is not an item",
+    "a line that states no number keeps a null quantity — “a couple caps” is not two",
+    "the same row returned twice is removed",
+  ]) ul.append(el("li", null, t));
+  g3.append(ul);
+  c.body.append(g3);
+
   for (const dl of dropped) {
     const b = el("div", "docrow");
     b.append(el("span", "docname", dl.raw));
@@ -551,8 +592,9 @@ function panelVerify(e, host) {
     c.body.append(b);
   }
   host.append(c);
-  const kept = card("what survived", [el("span", "chip ok", `${(e.result?.line_items || []).length} lines`)]);
-  kept.body.append(itemsTable(e.result?.line_items || [], e));
+
+  const kept = card("what survived", [el("span", "chip ok", `${items.length} lines`)]);
+  kept.body.append(itemsTable(items, e));
   host.append(kept);
 }
 
