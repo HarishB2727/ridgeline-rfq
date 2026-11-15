@@ -188,8 +188,12 @@ lines. A second code path would need all the same judgement and would disagree w
 
 - Two quantities in E009 are still wrong (adjacent rows in a scanned table).
 - `verify.py` cannot ground a line that came from a picture — there is no text to check it
-  against — so image-sourced lines ship on the model's word alone. That is where a
-  hallucination would get through, and it is the gap I would close next.
+  against — so image-sourced lines ship on the model's word alone. On the dev inbox that is
+  **46 of 210 lines, 22%**: the two phone photos, the scan and the pasted screenshot. Those
+  lines get the unit vocabulary, the totals-row filter, the vague-quantity rule and
+  de-duplication like any other, but not the one check that asks whether the line exists.
+  It is where a hallucination would get through, and the gap I would close next — by asking
+  for a verbatim transcription pass first and grounding the extracted lines against that.
 - `link_inbox` holds the inbox in memory; fine for 40 emails, wrong for a live queue.
 - Item-number de-duplication only engages when the leading numbers look like a contiguous
   index. A strip-split table whose index restarts mid-document would keep a duplicate row.
