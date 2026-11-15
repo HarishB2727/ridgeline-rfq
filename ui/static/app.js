@@ -135,6 +135,10 @@ function cellBox(key, id, stateCls, pills, sub, openable = true) {
 }
 
 const stepCls = v => v === "skipped" ? "skipped" : v === "done" ? "" : "pending";
+/* What a call costs, whether it was paid for this run or replayed — the ledger
+   records the usage every answer was first recorded with, so a cached run still
+   shows the real figure instead of a misleading $0.00. */
+const money = n => n >= 0.01 ? `$${n.toFixed(3)}` : n > 0 ? `$${n.toFixed(4)}` : "$0";
 
 /* ───────────── grouping: a party, their requests, the thread under each ─────────── */
 
@@ -235,6 +239,9 @@ function groupHead(p, s) {
   right.append(pill(`${p.threads.length} request${p.threads.length > 1 ? "s" : ""}`, "ghost"));
   if (nMsg !== p.threads.length) right.append(pill(`${nMsg} messages`, "ghost"));
   if (lines) right.append(pill(`${lines} lines to quote`, "ok"));
+  const spend = p.threads.flat().reduce((a, i) =>
+    a + ((s.emails[i] || {}).calls || []).reduce((b, c) => b + (c.cost_usd || 0), 0), 0);
+  if (spend) right.append(pill(money(spend), "ghost"));
   if (p.threads.some(t => t.some(i => (((s.emails[i] || {}).summary) || {}).needs_review)))
     right.append(pill("needs review", "warn"));
   h.append(right);
@@ -293,18 +300,24 @@ function emailRow(s, id, rel, members) {
 
   /* 5 — classification */
   const cc = (e.calls || []).filter(c => (c.label || "").startsWith("Decide"));
+  const ccCost = cc.reduce((a, c) => a + (c.cost_usd || 0), 0);
   const isItem = ["rfq", "rfq_revision", "purchase_order"].includes(sum.classification);
   row.append(cellBox("classify", id, stepCls(st.classify),
-    pill(sum.classification || "not run", sum.classification ? (isItem ? "ok" : "ghost") : "ghost"),
+    [pill(sum.classification || "not run", sum.classification ? (isItem ? "ok" : "ghost") : "ghost"),
+     cc.length ? pill(money(ccCost), "ai") : null],
     cc.length ? `${cc.length} model call${cc.length > 1 ? "s" : ""} · ${isItem ? "carries items" : "carries no items"}`
       : "waiting", cc.length > 0));
 
   /* 6 — model reads the documents */
-  const xc = (e.calls || []).length - cc.length;
+  const xcalls = (e.calls || []).filter(c => !(c.label || "").startsWith("Decide"));
+  const xc = xcalls.length;
+  const xcCost = xcalls.reduce((a, c) => a + (c.cost_usd || 0), 0);
   const skipped = st.extract === "skipped";
   row.append(cellBox("extract", id, stepCls(st.extract),
-    pill(skipped ? "skipped" : `${xc} model call${xc === 1 ? "" : "s"}`, skipped ? "ghost" : "ai"),
-    skipped ? "the gate — nothing to read" : `${sum.n_items ?? 0} lines returned`, xc > 0));
+    [pill(skipped ? "skipped" : `${xc} model call${xc === 1 ? "" : "s"}`, skipped ? "ghost" : "ai"),
+     xc ? pill(money(xcCost), "ai") : skipped ? pill("$0", "ghost") : null],
+    skipped ? "the gate — nothing to read, nothing spent"
+      : `${sum.n_items ?? 0} lines returned`, xc > 0));
 
   /* 7 — the line check */
   const unchecked = (sum.from_image || 0) + (sum.from_mixed || 0);
@@ -328,11 +341,14 @@ function emailRow(s, id, rel, members) {
     : sum.duplicate_of ? pill("duplicate", "ghost")
     : st.link === "done" ? pill(isCurrent ? "current order" : "ready to quote", "ok")
     : pill("waiting", "ghost");
-  row.append(cellBox("outcome", id, stepCls(st.link), outPill,
+  const total = (e.calls || []).reduce((a, c) => a + (c.cost_usd || 0), 0);
+  row.append(cellBox("outcome", id, stepCls(st.link),
+    [outPill, e.state === "done" ? pill(money(total), "ghost") : null],
     sum.duplicate_of ? `superseded by ${sum.duplicate_of}`
       : sum.needs_review ? (sum.review_reason || "").slice(0, 52)
       : sum.revises ? `the complete order, ${sum.n_items ?? 0} lines`
-      : `${sum.n_items ?? 0} lines`, e.state === "done"));
+      : `${sum.n_items ?? 0} lines · ${(e.calls || []).length} model call${(e.calls||[]).length===1?"":"s"} in total`,
+    e.state === "done"));
 
   if (OPEN === id) {
     const d = el("div", "detail");
