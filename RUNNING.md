@@ -95,6 +95,9 @@ python tests/test_resilience.py
 # the thread split, across 13 mail clients — free, no model, no key
 python tests/test_quoted_split.py
 
+# how bytes become documents, incl. the shapes the cache was recorded against — free
+python tests/test_documents.py
+
 # input shapes the dev inbox does not contain (needs a key; ~$0.09 cold)
 python tests/test_shapes.py
 

@@ -74,14 +74,39 @@ def sniff(data: bytes, mime: str, filename: str) -> str:
         return "eml"
     if mime == "text/csv" or filename.lower().endswith((".csv", ".tsv")):
         return "csv"
+    try:
+        sample = data[:8000].decode("utf-8")
+    except UnicodeDecodeError:
+        try:
+            sample = data[:8000].decode("latin-1")
+        except Exception:
+            return "unknown"
+
+    # Delimited text wearing the wrong name.  Exports are routinely called .xlsx or
+    # .txt while being CSV, and reading one as prose loses the column structure that
+    # tells a heading from a row.  Decided by parsing, not by counting commas, so a
+    # quoted field containing its own delimiter does not break the guess.
+    if _looks_delimited(sample):
+        return "csv"
     if mime.startswith("text/"):
         return "text"
-    # last resort: does it decode as text?
+    return "text"
+
+
+def _looks_delimited(sample: str) -> bool:
+    lines = [l for l in sample.splitlines() if l.strip()][:12]
+    if len(lines) < 2:
+        return False
+    body = "\n".join(lines)
     try:
-        data[:4000].decode("utf-8")
-        return "text"
-    except UnicodeDecodeError:
-        return "unknown"
+        dialect = csv.Sniffer().sniff(body, delimiters=",;\t|")
+    except csv.Error:
+        return False
+    rows = [r for r in csv.reader(io.StringIO(body), dialect) if r]
+    if len(rows) < 2:
+        return False
+    widths = {len(r) for r in rows[:-1]}  # the last row may be cut by the sample
+    return len(widths) == 1 and next(iter(widths)) >= 2
 
 
 def _cell(value) -> str:
