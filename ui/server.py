@@ -31,7 +31,7 @@ REPO = HERE.parent
 sys.path.insert(0, str(REPO))
 
 from rfq.documents import documentize_all  # noqa: E402
-from rfq.ingest import ingest  # noqa: E402
+from rfq.ingest import ingest, ingest_bytes  # noqa: E402
 from ui import engine, rollup  # noqa: E402
 
 JOBS: dict[str, engine.Job] = {}
@@ -110,6 +110,7 @@ def email_detail(job: engine.Job, eid: str) -> dict:
     out["body"] = {"current": e.body_current, "quoted": e.body_quoted}
     out["signals"] = {k: v for k, v in e.signals.items() if v}
 
+    sizes = {n: len(v[0]) for n, v in attachment_bytes(job, eid).items()}
     docs = []
     for att in e.attachments:
         for d in documentize_all(att):
@@ -117,11 +118,41 @@ def email_detail(job: engine.Job, eid: str) -> dict:
                 "source": d.source, "kind": d.kind, "error": d.error, "truncated": d.truncated,
                 "meta": {k: v for k, v in d.meta.items() if not k.startswith("_")},
                 "text": (d.text or "")[:60000],
+                "bytes": sizes.get(d.source, 0),
                 "images": [base64.b64encode(i).decode() for i in d.images[:8]],
                 "media_type": d.media_type,
             })
     out["documents"] = docs
     return out
+
+
+def attachment_bytes(job: engine.Job, eid: str) -> dict[str, tuple[bytes, str]]:
+    """Every file this email carries, by name — including the ones inside a
+    forwarded message, which is where the order often actually is."""
+    found: dict[str, tuple[bytes, str]] = {}
+
+    def walk(attachments, depth=0):
+        for a in attachments:
+            found.setdefault(a.filename, (a.data, a.mime))
+            is_msg = a.mime == "message/rfc822" or a.filename.lower().endswith(".eml")
+            if is_msg and depth < 3:
+                raw = a.data
+                try:
+                    inner = ingest_bytes(raw, "inner")
+                    if not (inner.headers.get("from") or inner.subject):
+                        raise ValueError
+                except Exception:
+                    try:
+                        inner = ingest_bytes(base64.b64decode(raw, validate=False), "inner")
+                    except Exception:
+                        continue
+                walk(inner.attachments, depth + 1)
+
+    try:
+        walk(ingest(job.inbox / f"{eid}.eml").attachments)
+    except Exception:
+        pass
+    return found
 
 
 # --------------------------------------------------------------------------- #
@@ -184,6 +215,27 @@ class Handler(BaseHTTPRequestHandler):
             if not calls or idx >= len(calls):
                 return self._json({"error": "no such call"}, 404)
             return self._json(calls[idx])
+
+        if u.path == "/api/attachment":
+            job = self._job(q)
+            eid, name = q.get("id", [""])[0], q.get("name", [""])[0]
+            if not job:
+                return self._json({"error": "no such job"}, 404)
+            hit = attachment_bytes(job, eid).get(name)
+            if hit is None:
+                return self._json({"error": "no such attachment"}, 404)
+            data, mime = hit
+            safe = Path(name).name.replace('"', "")
+            self.send_response(200)
+            self.send_header("Content-Type", mime or "application/octet-stream")
+            self.send_header("Content-Disposition", f'attachment; filename="{safe}"')
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            try:
+                self.wfile.write(data)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            return
 
         if u.path == "/api/requests":
             job = self._job(q)

@@ -109,6 +109,9 @@ function cellBox(key, id, stateCls, kids, openable = true) {
   }
   return c;
 }
+/* a cell is dimmed until its stage has run, and faded when the stage was skipped.
+   State beyond that lives on the card's border, not on every cell. */
+const stepCls = v => v === "skipped" ? "skipped" : v === "done" ? "" : "pending";
 const val = (big, rest) => { const v = el("div", "v"); v.append(el("span", "big", big)); if (rest) v.append(rest); return v; };
 
 /* ───────────── grouping: a party, their requests, the thread under each ─────────── */
@@ -221,8 +224,9 @@ function emailRow(s, id, rel, members) {
   const e = s.emails[id] || {};
   const sum = e.summary || {};
   const st = e.steps || {};
-  const row = el("div", `erow ${rel ? "child" : ""} ${OPEN === id ? "open" : ""}`);
   const busy = e.state === "running" || e.state === "linking";
+  const rowState = busy ? "running" : sum.needs_review ? "review" : e.error ? "failed" : "";
+  const row = el("div", `erow ${rel ? "child" : ""} ${OPEN === id ? "open" : ""} ${rowState}`);
 
   /* 1 — who / which message */
   const who = el("div", "cell who");
@@ -249,7 +253,7 @@ function emailRow(s, id, rel, members) {
     el("div", "sub", (q.sender || "").replace(/.*</, "").replace(/>/, "")),
   ]));
 
-  row.append(cellBox("code", id, st.ingest || "pending", [
+  row.append(cellBox("code", id, stepCls(st.ingest), [
     val(`${q.body_chars ?? 0}`, el("span", "muted", "current")),
     q.quoted_chars ? el("div", "sub warnish", `+${q.quoted_chars} thread — excluded`)
       : el("div", "sub", "no thread below"),
@@ -261,7 +265,7 @@ function emailRow(s, id, rel, members) {
   for (const d of att) kinds[d.kind] = (kinds[d.kind] || 0) + 1;
   const nAtt = att.length || (q.attachments || []).length;
   const bad = att.some(d => d.kind === "unreadable");
-  row.append(cellBox("docs", id, (bad ? "warnc " : "") + (st.documents || "pending"), [
+  row.append(cellBox("docs", id, stepCls(st.documents), [
     val(`${nAtt}`, el("span", "muted", nAtt === 1 ? "file" : "files")),
     el("div", "sub", att.length ? Object.entries(kinds).map(([k, v]) => `${v} ${k}`).join(", ")
       : (q.attachments || []).join(", ") || "none"),
@@ -270,19 +274,19 @@ function emailRow(s, id, rel, members) {
 
   const cc = (e.calls || []).filter(c => (c.label || "").startsWith("Decide"));
   const isItem = ["rfq", "rfq_revision", "purchase_order"].includes(sum.classification);
-  row.append(cellBox("classify", id, st.classify || "pending", [
+  row.append(cellBox("classify", id, stepCls(st.classify), [
     sum.classification ? el("span", `chip ${isItem ? "ok" : ""}`, sum.classification) : el("div", "v muted", "—"),
     el("div", "sub", cc.length ? `${cc.length} model call${cc.length > 1 ? "s" : ""}` : "not run"),
   ], cc.length > 0));
 
   const xc = (e.calls || []).length - cc.length;
   const skipped = st.extract === "skipped";
-  row.append(cellBox("extract", id, st.extract || "pending", [
+  row.append(cellBox("extract", id, stepCls(st.extract), [
     skipped ? el("span", "chip", "skipped") : val(`${xc}`, el("span", "muted", xc === 1 ? "call" : "calls")),
     el("div", "sub", skipped ? "no items to read — the gate" : `${sum.n_items ?? 0} lines returned`),
   ], xc > 0));
 
-  row.append(cellBox("verify", id, (sum.n_dropped ? "warnc " : "") + (st.verify || "pending"), [
+  row.append(cellBox("verify", id, stepCls(st.verify), [
     val(`${sum.n_items ?? 0}`, el("span", "muted", "kept")),
     el("div", "sub", sum.n_dropped ? `${sum.n_dropped} dropped` : "nothing dropped"),
   ], e.state === "done"));
@@ -290,8 +294,7 @@ function emailRow(s, id, rel, members) {
   const isCurrent = members && !sum.duplicate_of &&
     id === [...members].reverse().find(m => !(((s.emails[m] || {}).summary) || {}).duplicate_of
       && (((s.emails[m] || {}).summary) || {}).n_items);
-  const flag = sum.needs_review ? "warnc" : e.error ? "badc" : (st.link || "pending");
-  row.append(cellBox("outcome", id, flag, [
+  row.append(cellBox("outcome", id, stepCls(st.link), [
     sum.needs_review ? el("span", "chip warn", "needs review")
       : sum.duplicate_of ? el("span", "chip", "duplicate")
       : st.link === "done" ? el("span", "chip ok", isCurrent && members.length > 1 ? "current order" : "ready to quote")
@@ -451,6 +454,8 @@ function panelCode(e, host) {
   host.append(c4);
 }
 
+const fmtBytes = n => n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(1)} MB`;
+
 function panelDocs(e, host) {
   const docs = (e.documents || []);
   const roles = {};
@@ -460,6 +465,11 @@ function panelDocs(e, host) {
     const chips = [el("span", doc.kind === "unreadable" ? "chip warn" : "chip", doc.kind)];
     if (roles[doc.source]) chips.push(el("span", "chip ok", roles[doc.source]));
     if (doc.truncated) chips.push(el("span", "chip warn", "truncated"));
+    if (doc.bytes) chips.push(el("span", "chip", fmtBytes(doc.bytes)));
+    const dl = el("a", "mini dl", "download");
+    dl.href = `/api/attachment?job=${encodeURIComponent(JOB)}&id=${encodeURIComponent(e.id)}&name=${encodeURIComponent(doc.source)}`;
+    dl.setAttribute("download", doc.source);
+    chips.push(dl);
     const c = card(doc.source, chips, doc.kind === "unreadable");
     if (doc.error) c.body.append(el("div", null, doc.error));
     if (doc.meta && Object.keys(doc.meta).length)
