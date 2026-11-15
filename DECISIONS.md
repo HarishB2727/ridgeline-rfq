@@ -111,10 +111,15 @@ but it is where my numbers will fall first.
 *Thread messages that do two things at once.* The classifier picks one of seven labels for a
 message that chases a quote **and** changes it, or commits to part of an order **and** asks a
 question. Dev has one instance of each in isolation and I get both right; a message that mixes
-them has no right answer in this schema and I will pick the wrong half. Related: a purchase
-order that accepts items by description rather than by number ("go ahead with the flanges and
-the pipe") — my `selects_items_from_quoted` path keys on labels it can name, and a prose
-selection will either over- or under-select from the quote.
+them has no right answer in this schema and I will pick the wrong half.
+
+I originally listed a second case here — a purchase order that accepts items by description
+rather than by number, *"go ahead with the flanges and the pipe"* — on the reasoning that
+`selects_items_from_quoted` keys on labels it can name. Then I built it (`S011` in
+`tests/test_shapes.py`) rather than leaving it as a guess, and it returns exactly the flange
+and the pipe and correctly holds the valve and the gasket. The prediction was wrong. I am
+leaving the correction visible because an untested prediction and a tested one are not the
+same kind of claim, and most of the rest of this section is still the first kind.
 
 I also expect `vendor_quote` to be my most fragile class. Dev's example is unmistakable — it
 quotes our own rep, with prices, lead times and FOB terms. A supplier email without those

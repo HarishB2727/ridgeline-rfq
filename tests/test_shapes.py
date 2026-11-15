@@ -191,6 +191,80 @@ def build(inbox: Path) -> None:
     )
 
 
+def _table_png(rows, *, header, note=None, numbered=True) -> bytes:
+    """A plain rendered table, tall enough that it will be read as strips."""
+    from PIL import Image, ImageDraw
+
+    w, row_h, top = 1150, 52, 150
+    img = Image.new("RGB", (w, top + row_h * (len(rows) + 1) + 60), "white")
+    d = ImageDraw.Draw(img)
+    d.text((40, 40), "Pelican Bay Utilities - Lift Station 7 - material list", fill="black")
+    if note:
+        d.text((40, 70), note, fill="black")
+    cols = [40, 200, 330, 470] if not numbered else [40, 150, 310, 440, 580]
+    for i, h in enumerate(header):
+        d.text((cols[i], top - 30), h, fill="black")
+    d.line([(30, top - 6), (w - 30, top - 6)], fill="black", width=2)
+    for r, row in enumerate(rows):
+        y = top + r * row_h + 14
+        for i, cell in enumerate(row):
+            d.text((cols[i], y), str(cell), fill="black")
+        d.line([(30, y + row_h - 14), (w - 30, y + row_h - 14)], fill=(180, 180, 180))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def build_extra(inbox: Path) -> None:
+    # S011 — a PO that accepts part of our quote BY DESCRIPTION, not by number.
+    # Named in DECISIONS.md as an expected failure; never actually run until now.
+    (inbox / "S011.eml").write_bytes(
+        msg(
+            "Janelle Okoye <janelle@brannock.example>",
+            "Re: Quote Q-26-04501 - booster skid",
+            "Tara,\n\nGo ahead with the flanges and the pipe. Hold the valves and the gaskets "
+            "until the engineer signs off. PO to follow.\n\nJanelle\n\n"
+            "On Wed, Nov 4, 2026 at 8:15 AM Tara Linscott <tara.linscott@ridgeline-supply.example> wrote:\n"
+            "> Hi Janelle,\n"
+            "> Here is quote Q-26-04501 for the booster skid.\n"
+            ">\n"
+            "> 1. 8 EA - 3\" 150# RF weld neck flange, A105, STD bore - $38.60 ea\n"
+            "> 2. 120 FT - 3\" SCH 40 A53B ERW pipe, PE - $7.95/ft\n"
+            "> 3. 4 EA - 3\" 150# wafer butterfly valve, CF8M, lever - $212.00 ea\n"
+            "> 4. 8 EA - 3\" spiral wound gasket, 316/graphite, 150# - $5.10 ea\n"
+            ">\n"
+            "> Tara Linscott\n"
+            "> Inside Sales | Ridgeline Industrial Supply\n",
+            date="Wed, 04 Nov 2026 14:00:00 -0600",
+            mid="<s011@brannock.example>",
+            in_reply_to="<q26-04501@ridgeline-supply.example>",
+        ).as_bytes()
+    )
+
+    # S012 — a scanned table with NO item-number column.  Strip de-duplication
+    # anchors on that index; without one, an overlapping row could double-count.
+    sizes = ['1/2"', '3/4"', '1"', '1-1/4"', '1-1/2"', '2"', '2-1/2"', '3"']
+    prods = ["90 elbow", "45 elbow", "tee", "coupling", "union", "cap"]
+    rows = [[(i * 3) % 40 + 2, "EA", sizes[i % 8], prods[i % 6]] for i in range(24)]
+    png = _table_png(
+        rows,
+        header=["QTY", "UOM", "SIZE", "DESCRIPTION"],
+        note="ALL FITTINGS THREADED 3000# A105 UNLESS NOTED",
+        numbered=False,
+    )
+    (inbox / "S012.eml").write_bytes(
+        msg(
+            "Dale Thibodeaux <dale@pelicanbay.example>",
+            "lift station 7 - scanned material list",
+            "Scanned the list from the job folder. Please price it all.\n\nDale",
+            date="Thu, 05 Nov 2026 11:00:00 -0600",
+            mid="<s012@pelicanbay.example>",
+            attachments=[("scan_ls7.png", "image/png", png)],
+        ).as_bytes()
+    )
+    return {r[3] + r[2]: r[0] for r in rows}
+
+
 EXPECT = {
     "S001": "forwarded email: the BOM is attached to the INNER message (3 items)",
     "S002": "two attachments share one filename; both sheets must survive (6 items)",
@@ -202,6 +276,8 @@ EXPECT = {
     "S008": "same subject as S009 but a DIFFERENT order (1 item)",
     "S009": "must NOT be marked a duplicate of S008 (1 item)",
     "S010": "units GAL/BAG/CS/PR/DZ, 'twelve', '1,200', '2.5'",
+    "S011": "PO accepting part of a quote BY DESCRIPTION: flanges + pipe only (2 items, not 4)",
+    "S012": "scanned table with NO item-number column, 24 rows (24 items, no repeats)",
 }
 
 
@@ -212,6 +288,7 @@ def main() -> int:
         inbox = tmp / "emails"
         inbox.mkdir()
         build(inbox)
+        build_extra(inbox)
 
         parsed, cost, results = run(
             inbox, cache_dir=REPO / "cache", api_key=os.getenv("OPENAI_API_KEY"), concurrency=4

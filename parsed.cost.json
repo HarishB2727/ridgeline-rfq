@@ -47,30 +47,6 @@
     ]
   },
   "per_email": {
-    "E002": {
-      "calls": 0,
-      "cache_hits": 2,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.005932,
-      "models": {
-        "gpt-4.1-mini": 1,
-        "gpt-4.1": 1
-      }
-    },
-    "E001": {
-      "calls": 0,
-      "cache_hits": 2,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.006768,
-      "models": {
-        "gpt-4.1-mini": 1,
-        "gpt-4.1": 1
-      }
-    },
     "E003": {
       "calls": 0,
       "cache_hits": 2,
@@ -95,16 +71,28 @@
         "gpt-4.1": 1
       }
     },
-    "E006": {
+    "E002": {
       "calls": 0,
-      "cache_hits": 3,
+      "cache_hits": 2,
       "prompt_tokens": 0,
       "completion_tokens": 0,
       "cost_usd": 0.0,
-      "cold_cost_usd": 0.03322,
+      "cold_cost_usd": 0.005932,
       "models": {
         "gpt-4.1-mini": 1,
-        "gpt-4.1": 2
+        "gpt-4.1": 1
+      }
+    },
+    "E001": {
+      "calls": 0,
+      "cache_hits": 2,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "cost_usd": 0.0,
+      "cold_cost_usd": 0.006768,
+      "models": {
+        "gpt-4.1-mini": 1,
+        "gpt-4.1": 1
       }
     },
     "E008": {
@@ -114,6 +102,18 @@
       "completion_tokens": 0,
       "cost_usd": 0.0,
       "cold_cost_usd": 0.034374,
+      "models": {
+        "gpt-4.1-mini": 1,
+        "gpt-4.1": 2
+      }
+    },
+    "E006": {
+      "calls": 0,
+      "cache_hits": 3,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "cost_usd": 0.0,
+      "cold_cost_usd": 0.03322,
       "models": {
         "gpt-4.1-mini": 1,
         "gpt-4.1": 2
@@ -131,6 +131,17 @@
         "gpt-4.1": 3
       }
     },
+    "E012": {
+      "calls": 0,
+      "cache_hits": 1,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "cost_usd": 0.0,
+      "cold_cost_usd": 0.000697,
+      "models": {
+        "gpt-4.1-mini": 1
+      }
+    },
     "E011": {
       "calls": 0,
       "cache_hits": 1,
@@ -142,15 +153,28 @@
         "gpt-4.1-mini": 1
       }
     },
-    "E012": {
+    "E007": {
       "calls": 0,
-      "cache_hits": 1,
+      "cache_hits": 3,
       "prompt_tokens": 0,
       "completion_tokens": 0,
       "cost_usd": 0.0,
-      "cold_cost_usd": 0.000697,
+      "cold_cost_usd": 0.011357,
       "models": {
-        "gpt-4.1-mini": 1
+        "gpt-4.1-mini": 1,
+        "gpt-4.1": 2
+      }
+    },
+    "E010": {
+      "calls": 0,
+      "cache_hits": 4,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "cost_usd": 0.0,
+      "cold_cost_usd": 0.016047,
+      "models": {
+        "gpt-4.1-mini": 1,
+        "gpt-4.1": 3
       }
     },
     "E014": {
@@ -199,18 +223,6 @@
         "gpt-4.1": 2
       }
     },
-    "E007": {
-      "calls": 0,
-      "cache_hits": 3,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.011357,
-      "models": {
-        "gpt-4.1-mini": 1,
-        "gpt-4.1": 2
-      }
-    },
     "E017": {
       "calls": 0,
       "cache_hits": 3,
@@ -221,18 +233,6 @@
       "models": {
         "gpt-4.1-mini": 1,
         "gpt-4.1": 2
-      }
-    },
-    "E010": {
-      "calls": 0,
-      "cache_hits": 4,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.016047,
-      "models": {
-        "gpt-4.1-mini": 1,
-        "gpt-4.1": 3
       }
     },
     "E018": {
@@ -271,18 +271,6 @@
         "gpt-4.1": 1
       }
     },
-    "E024": {
-      "calls": 0,
-      "cache_hits": 2,
-      "prompt_tokens": 0,
-      "completion_tokens": 0,
-      "cost_usd": 0.0,
-      "cold_cost_usd": 0.007383,
-      "models": {
-        "gpt-4.1-mini": 1,
-        "gpt-4.1": 1
-      }
-    },
     "E023": {
       "calls": 0,
       "cache_hits": 3,
@@ -293,6 +281,18 @@
       "models": {
         "gpt-4.1-mini": 1,
         "gpt-4.1": 2
+      }
+    },
+    "E024": {
+      "calls": 0,
+      "cache_hits": 2,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "cost_usd": 0.0,
+      "cold_cost_usd": 0.007383,
+      "models": {
+        "gpt-4.1-mini": 1,
+        "gpt-4.1": 1
       }
     },
     "E019": {

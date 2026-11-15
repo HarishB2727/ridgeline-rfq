@@ -92,6 +92,12 @@ shasum -a 256 a.json b.json c.json                   # all three identical
 # 3 — one bad email never takes down the run
 python tests/test_resilience.py
 
+# the thread split, across 13 mail clients — free, no model, no key
+python tests/test_quoted_split.py
+
+# input shapes the dev inbox does not contain (needs a key; ~$0.09 cold)
+python tests/test_shapes.py
+
 # 4 — cost
 cat parsed.cost.json
 ```

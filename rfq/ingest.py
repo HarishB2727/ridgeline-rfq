@@ -122,8 +122,21 @@ _SEP_PATTERNS = (
     re.compile(r"^\s*on\s.{0,250}\bwrote:\s*$", re.I),
     re.compile(r"^\s*\*?\s*(begin forwarded message)\s*:?\s*$", re.I),
 )
-_FROM_LINE = re.compile(r"^\s*\*?\s*from\s*:\s*\S", re.I)
-_FOLLOWUP = re.compile(r"^\s*\*?\s*(sent|date|to|subject)\s*:", re.I)
+# An Outlook-style header block introducing the quoted message.  Localised because
+# a block we do not recognise does not fail loudly — it silently hands last month's
+# order to the extractor as if it were today's request.  Safe to widen: a match
+# needs the From-like line AND two of the follow-up fields within four lines.
+_FROM_WORDS = r"from|von|de|da|van|fra|från|fra|od"
+_FOLLOWUP_WORDS = (
+    r"sent|date|to|cc|bcc|subject"           # English
+    r"|gesendet|an|betreff|datum"            # German
+    r"|envoy[ée]|objet|[àa]"                 # French
+    r"|enviado|enviada|para|asunto|fecha"    # Spanish / Portuguese
+    r"|assunto|inviato|oggetto"              # Portuguese / Italian
+    r"|verzonden|aan|onderwerp"              # Dutch
+)
+_FROM_LINE = re.compile(rf"^\s*\*?\s*({_FROM_WORDS})\s*:\s*\S", re.I)
+_FOLLOWUP = re.compile(rf"^\s*\*?\s*({_FOLLOWUP_WORDS})\s*:", re.I)
 
 
 def split_quoted(text: str) -> tuple[str, str]:
