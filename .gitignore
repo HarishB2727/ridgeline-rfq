@@ -4,3 +4,5 @@ __pycache__/
 .env
 .DS_Store
 traces/
+ui/decisions.jsonl
+requests.json
