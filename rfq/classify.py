@@ -136,6 +136,11 @@ def second_opinion(email, documents, first: dict, runner, model: str) -> dict:
     return out
 
 
+def _machine_generated(email) -> bool:
+    s = email.signals
+    return bool(s["bounce_envelope"] or s["auto_submitted"] or s["list_unsubscribe"] or s["precedence_bulk"])
+
+
 def reconcile(email, documents, result: dict) -> dict:
     """Let code veto the model where the headers are unambiguous, and record
     disagreement where they are not."""
@@ -162,6 +167,20 @@ def reconcile(email, documents, result: dict) -> dict:
             out["code_override"] = "no reply headers and no quoted history: cannot revise an earlier message"
             out["classification"] = "rfq"
             out["revises_earlier_request"] = False
+
+    # Nothing readable arrived: an empty body and every attachment unopenable.
+    # Calling that `other` asserts "not a request" on no evidence, and because the
+    # format allows needs_review only on the item classes, the email would leave
+    # with no lines and no flag — a silent loss.  Unless the headers positively say
+    # machine-generated, assume it mattered and make a human look.
+    if out["classification"] not in ITEM_CLASSES and not _machine_generated(email):
+        atts = [d for d in documents if d.source != "body"]
+        body_signal = sum(c.isalnum() for c in email.body_current or "")
+        if atts and all(d.kind == "unreadable" for d in atts) and body_signal < 40:
+            out["code_override"] = (
+                "nothing readable in this email: empty body and no attachment could be opened"
+            )
+            out["classification"] = "rfq"
 
     if out["classification"] not in ITEM_CLASSES:
         rows = _looks_like_an_item_table(documents)
