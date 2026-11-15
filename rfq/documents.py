@@ -1,0 +1,345 @@
+"""Stage 2 — documentize.  Attachments in, uniform Documents out.  Still no model.
+
+Everything an email carries becomes the same thing: a Document with a `source`
+(the attachment filename, or "body"), and either text or images.  Because the
+Document knows its own name, `source` on every extracted line is correct by
+construction rather than by asking a model to remember filenames.
+
+Routing is by magic bytes, never by extension — a held-out inbox will have a
+.xls that is really a .csv and a .pdf that is really a photo.
+"""
+
+from __future__ import annotations
+
+import csv
+import io
+import re
+import zipfile
+from dataclasses import dataclass, field
+
+MAX_IMAGE_SIDE = 2000
+MAX_PASSTHROUGH_BYTES = 1_500_000
+DEFAULT_PAGE_CAP = 20
+SCAN_TEXT_THRESHOLD = 40  # alphanumeric chars per page below which we call it a scan
+
+
+@dataclass
+class Document:
+    source: str
+    kind: str  # "text" | "image" | "unreadable"
+    text: str = ""
+    images: list[bytes] = field(default_factory=list, repr=False)
+    media_type: str = "image/png"
+    error: str | None = None
+    truncated: bool = False
+    meta: dict = field(default_factory=dict)
+
+    @property
+    def readable(self) -> bool:
+        return self.kind != "unreadable"
+
+
+# --------------------------------------------------------------------------- #
+# helpers
+# --------------------------------------------------------------------------- #
+
+
+def sniff(data: bytes, mime: str, filename: str) -> str:
+    """Return a routing key from content first, declared type second, name last."""
+    head = data[:8]
+    if head.startswith(b"%PDF"):
+        return "pdf"
+    if head.startswith(b"\xff\xd8\xff"):
+        return "image"
+    if head.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image"
+    if head[:6] in (b"GIF87a", b"GIF89a") or head.startswith(b"BM"):
+        return "image"
+    if head.startswith(b"RIFF") and data[8:12] == b"WEBP":
+        return "image"
+    if head.startswith(b"PK\x03\x04"):
+        try:
+            names = set(zipfile.ZipFile(io.BytesIO(data)).namelist())
+        except Exception:
+            return "unknown"
+        if any(n.startswith("xl/") for n in names):
+            return "xlsx"
+        if any(n.startswith("word/") for n in names):
+            return "docx"
+        return "unknown"
+    if head.startswith(b"\xd0\xcf\x11\xe0"):
+        return "legacy_office"
+    if mime == "message/rfc822" or filename.lower().endswith(".eml"):
+        return "eml"
+    if mime == "text/csv" or filename.lower().endswith((".csv", ".tsv")):
+        return "csv"
+    if mime.startswith("text/"):
+        return "text"
+    # last resort: does it decode as text?
+    try:
+        data[:4000].decode("utf-8")
+        return "text"
+    except UnicodeDecodeError:
+        return "unknown"
+
+
+def _cell(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value).strip()
+
+
+def _row(cells: list[str]) -> str:
+    while cells and not cells[-1]:
+        cells.pop()
+    return " | ".join(cells)
+
+
+# --------------------------------------------------------------------------- #
+# per-format readers
+# --------------------------------------------------------------------------- #
+
+
+def read_xlsx(data: bytes, source: str) -> Document:
+    from openpyxl import load_workbook
+
+    wb = load_workbook(io.BytesIO(data), data_only=True)
+    out: list[str] = []
+    skipped: list[str] = []
+    for ws in wb.worksheets:
+        # A hidden sheet is the author telling you it is not the live version
+        # (E005 hides "Rev A (old)" behind the Rev B everyone is meant to read).
+        if ws.sheet_state != "visible":
+            skipped.append(ws.title)
+            continue
+        out.append(f"=== SHEET: {ws.title} ===")
+        for row in ws.iter_rows(values_only=True):
+            line = _row([_cell(c) for c in row])
+            if line.strip():
+                out.append(line)
+        out.append("")
+    doc = Document(source=source, kind="text", text="\n".join(out).strip())
+    doc.meta["sheets"] = [ws.title for ws in wb.worksheets if ws.sheet_state == "visible"]
+    doc.meta["hidden_sheets_skipped"] = skipped
+    return doc
+
+
+def read_docx(data: bytes, source: str) -> Document:
+    import docx
+    from docx.table import Table
+    from docx.text.paragraph import Paragraph
+
+    d = docx.Document(io.BytesIO(data))
+    out: list[str] = []
+    for child in d.element.body.iterchildren():
+        tag = child.tag.rsplit("}", 1)[-1]
+        if tag == "p":
+            txt = Paragraph(child, d).text.strip()
+            if txt:
+                out.append(txt)
+        elif tag == "tbl":
+            for r in Table(child, d).rows:
+                line = _row([c.text.strip() for c in r.cells])
+                if line.strip():
+                    out.append(line)
+            out.append("")
+    return Document(source=source, kind="text", text="\n".join(out).strip())
+
+
+def read_csv(data: bytes, source: str) -> Document:
+    text = data.decode("utf-8-sig", "replace")
+    sample = text[:4000]
+    try:
+        dialect = csv.Sniffer().sniff(sample, delimiters=",;\t|")
+    except csv.Error:
+        dialect = csv.excel
+    rows = list(csv.reader(io.StringIO(text), dialect))
+    lines = [_row([c.strip() for c in r]) for r in rows]
+    return Document(source=source, kind="text", text="\n".join(l for l in lines if l.strip()))
+
+
+def _page_lines(page) -> str:
+    """Rebuild a page's table structure from word boxes.
+
+    A text PDF's raw get_text() flattens columns into runs of spaces; grouping
+    words by baseline and splitting on horizontal gaps restores 'cell | cell',
+    which is both what the answer key's `raw` looks like and what a model reads
+    a BOM from most reliably.
+    """
+    words = page.get_text("words")  # (x0, y0, x1, y1, word, block, line, word_no)
+    if not words:
+        return ""
+    rows: dict[int, list[tuple]] = {}
+    for w in words:
+        rows.setdefault(round(w[1] / 3.0), []).append(w)
+    out = []
+    for key in sorted(rows):
+        ws = sorted(rows[key], key=lambda w: w[0])
+        cells, cur, prev_end = [], [ws[0][4]], ws[0][2]
+        for w in ws[1:]:
+            if w[0] - prev_end > 8.0:
+                cells.append(" ".join(cur))
+                cur = [w[4]]
+            else:
+                cur.append(w[4])
+            prev_end = w[2]
+        cells.append(" ".join(cur))
+        out.append(" | ".join(c.strip() for c in cells if c.strip()))
+    return "\n".join(l for l in out if l.strip())
+
+
+def read_pdf(data: bytes, source: str, page_cap: int = DEFAULT_PAGE_CAP) -> Document:
+    import pymupdf
+
+    try:
+        doc = pymupdf.open(stream=data, filetype="pdf")
+    except Exception as exc:
+        return Document(source=source, kind="unreadable", error=f"PDF would not open: {exc}")
+
+    if doc.needs_pass:
+        return Document(
+            source=source,
+            kind="unreadable",
+            error="PDF is password protected and cannot be opened",
+        )
+
+    n_pages = doc.page_count
+    pages = min(n_pages, page_cap)
+    truncated = n_pages > pages
+
+    texts = []
+    alnum = 0
+    for i in range(pages):
+        t = _page_lines(doc[i])
+        alnum += sum(ch.isalnum() for ch in t)
+        texts.append(t)
+
+    if alnum / max(pages, 1) >= SCAN_TEXT_THRESHOLD:
+        body = "\n".join(f"--- page {i + 1} ---\n{t}" for i, t in enumerate(texts) if t.strip())
+        d = Document(source=source, kind="text", text=body, truncated=truncated)
+        d.meta.update(pages=n_pages, pages_read=pages, has_text_layer=True)
+        return d
+
+    # No usable text layer: it is a scan.  Rasterise and let a vision model read it.
+    images = []
+    for i in range(pages):
+        page = doc[i]
+        zoom = min(2.5, MAX_IMAGE_SIDE / max(page.rect.width, page.rect.height))
+        pix = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom))
+        images.append(pix.tobytes("png"))
+    d = Document(source=source, kind="image", images=images, media_type="image/png", truncated=truncated)
+    d.meta.update(pages=n_pages, pages_read=pages, has_text_layer=False, scanned=True)
+    return d
+
+
+def read_image(data: bytes, source: str, mime: str) -> Document:
+    from PIL import Image
+
+    try:
+        im = Image.open(io.BytesIO(data))
+        im.load()
+    except Exception as exc:
+        return Document(source=source, kind="unreadable", error=f"image would not decode: {exc}")
+
+    w, h = im.size
+    if max(w, h) <= MAX_IMAGE_SIDE and len(data) <= MAX_PASSTHROUGH_BYTES:
+        media = mime if mime.startswith("image/") else "image/png"
+        d = Document(source=source, kind="image", images=[data], media_type=media)
+        d.meta.update(width=w, height=h, resized=False)
+        return d
+
+    scale = MAX_IMAGE_SIDE / max(w, h)
+    im = im.convert("RGB").resize((max(1, int(w * scale)), max(1, int(h * scale))), Image.LANCZOS)
+    buf = io.BytesIO()
+    im.save(buf, format="JPEG", quality=85)
+    d = Document(source=source, kind="image", images=[buf.getvalue()], media_type="image/jpeg")
+    d.meta.update(width=w, height=h, resized=True)
+    return d
+
+
+def read_eml(data: bytes, source: str) -> Document:
+    """An attached message — a bounce's original, or a forwarded .eml.
+
+    Rendered with its own envelope so the classifier can see *whose* message it is.
+    A bounce carries our own outbound RFQ; those are not customer requests.
+    """
+    from .ingest import ingest_bytes
+
+    try:
+        inner = ingest_bytes(data, f"{source}:inner")
+    except Exception as exc:
+        return Document(source=source, kind="unreadable", error=f"attached message unreadable: {exc}")
+
+    head = [
+        f"From: {inner.headers.get('from')}",
+        f"To: {inner.headers.get('to')}",
+        f"Date: {inner.headers.get('date')}",
+        f"Subject: {inner.headers.get('subject')}",
+    ]
+    text = "=== ATTACHED MESSAGE ===\n" + "\n".join(head) + "\n\n" + inner.body_current
+    d = Document(source=source, kind="text", text=text.strip())
+    d.meta.update(
+        attached_message=True,
+        inner_from=inner.sender_addr,
+        inner_from_us=inner.from_us,
+        inner_subject=inner.subject,
+    )
+    return d
+
+
+# --------------------------------------------------------------------------- #
+# the router
+# --------------------------------------------------------------------------- #
+
+
+def documentize(attachment, page_cap: int = DEFAULT_PAGE_CAP) -> Document:
+    """One attachment -> one Document.  Never raises: a failure is a flagged Document."""
+    source, data, mime = attachment.filename, attachment.data, attachment.mime
+    if not data:
+        return Document(source=source, kind="unreadable", error="attachment is empty (0 bytes)")
+
+    kind = sniff(data, mime, source)
+    try:
+        if kind == "xlsx":
+            return read_xlsx(data, source)
+        if kind == "docx":
+            return read_docx(data, source)
+        if kind == "csv":
+            return read_csv(data, source)
+        if kind == "pdf":
+            return read_pdf(data, source, page_cap)
+        if kind == "image":
+            return read_image(data, source, mime)
+        if kind == "eml":
+            return read_eml(data, source)
+        if kind == "text":
+            return Document(source=source, kind="text", text=data.decode("utf-8", "replace").strip())
+        if kind == "legacy_office":
+            return Document(
+                source=source,
+                kind="unreadable",
+                error="legacy Office binary format (.xls/.doc) — no reader available",
+            )
+        return Document(
+            source=source, kind="unreadable", error=f"unsupported attachment type ({mime or 'unknown'})"
+        )
+    except Exception as exc:  # a corrupt file is one flagged line, not a dead run
+        return Document(
+            source=source, kind="unreadable", error=f"{type(exc).__name__} while reading: {exc}"
+        )
+
+
+_LOGO_HINT = re.compile(r"(logo|signature|sig|banner|footer|header|icon|spacer)", re.I)
+
+
+def looks_decorative(doc: Document, attachment) -> bool:
+    """A weak prior only — the vision model gets the final say.
+
+    Deliberately NOT a size rule: in the dev inbox the Delta Mechanical logo is
+    3,307 bytes and the spreadsheet screenshot holding six real line items is
+    4,295; Cobalt Ridge's logo is 5,288, larger than both.  Any byte threshold
+    silently deletes a customer's order.
+    """
+    return bool(attachment.inline and _LOGO_HINT.search(attachment.filename or ""))

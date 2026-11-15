@@ -1,0 +1,22 @@
+[project]
+name = "ridgeline-rfq"
+version = "0.1.0"
+description = "Reads the Ridgeline RFQ inbox: classifies each email and extracts the line items."
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.40",
+    "openpyxl>=3.1",
+    "python-docx>=1.1",
+    "pymupdf>=1.24",
+    "pillow>=10.0",
+]
+
+[project.scripts]
+rfq = "rfq.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["rfq*"]
