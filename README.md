@@ -12,6 +12,9 @@ rfq parse --emails data/dev/emails --out parsed.json
 **It runs with no API key.** Every model answer is recorded in `cache/` and committed, so the
 dev inbox replays in under a second for $0.00 and produces byte-identical output.
 
+**Five-minute walkthrough:**
+[one email end to end, the two decisions, and where I changed the agent's course](https://drive.google.com/file/d/1iNLcRNzZVeLdmRo9d8OEqiD2uWB7ZmTF/view?usp=sharing)
+
 ## Results on the dev inbox
 
 | | |

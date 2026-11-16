@@ -122,8 +122,7 @@ spelling-equivalence table the README describes. Current dev numbers are in `DEC
 
 ## Screen recording
 
-<!-- TODO: paste the link here before sending. -->
-<!-- e.g. https://drive.google.com/file/d/.../view -->
+https://drive.google.com/file/d/1iNLcRNzZVeLdmRo9d8OEqiD2uWB7ZmTF/view?usp=sharing
 
 ## Layout
 
