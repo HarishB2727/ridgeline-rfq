@@ -123,6 +123,7 @@ spelling-equivalence table the README describes. Current dev numbers are in `DEC
 ## Screen recording
 
 <!-- TODO: paste the link here before sending. -->
+<!-- e.g. https://drive.google.com/file/d/.../view -->
 
 ## Layout
 
